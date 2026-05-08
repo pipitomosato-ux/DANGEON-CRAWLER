@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DUNGEON CRAWLER ☠</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ CLASS SELECT ═══ -->
+<div id="class-select" class="active">
+  <div id="cs-title">☠ DUNGEON CRAWLER ☠</div>
+  <div id="cs-sub">— 職業を選べ —</div>
+  <div id="cs-cards">
+    <div class="cs-card" onclick="selectClass('warrior')" id="card-warrior">
+      <span class="cs-icon" style="color:#e84040">⚔</span>
+      <span class="cs-name">戦士</span>
+      <div class="cs-desc">重装備の近接戦闘のプロ。高いHPと防御力で正面から戦い抜く。</div>
+      <div class="cs-stats">
+        <div class="cs-stat-row">HP <span>30</span></div>
+        <div class="cs-stat-row">MP <span>6</span></div>
+        <div class="cs-stat-row">ATK <span>7</span></div>
+        <div class="cs-stat-row">DEF <span>4</span></div>
+      </div>
+      <div class="cs-perk">✦ 会心一撃：30%で2倍ダメージ</div>
+    </div>
+    <div class="cs-card" onclick="selectClass('mage')" id="card-mage">
+      <span class="cs-icon" style="color:#4488ff">✦</span>
+      <span class="cs-name">魔法使い</span>
+      <div class="cs-desc">強力な魔法で一撃必殺。MPは豊富だがHPは低め。</div>
+      <div class="cs-stats">
+        <div class="cs-stat-row">HP <span>15</span></div>
+        <div class="cs-stat-row">MP <span>20</span></div>
+        <div class="cs-stat-row">ATK <span>4</span></div>
+        <div class="cs-stat-row">DEF <span>1</span></div>
+      </div>
+      <div class="cs-perk">✦ 魔法：MP1消費、威力3倍</div>
+    </div>
+    <div class="cs-card" onclick="selectClass('rogue')" id="card-rogue">
+      <span class="cs-icon" style="color:#3ee8cc">🗡</span>
+      <span class="cs-name">盗賊</span>
+      <div class="cs-desc">素早い連続攻撃と高い逃走率が武器。ゴールドも多く拾える。</div>
+      <div class="cs-stats">
+        <div class="cs-stat-row">HP <span>20</span></div>
+        <div class="cs-stat-row">MP <span>8</span></div>
+        <div class="cs-stat-row">ATK <span>6</span></div>
+        <div class="cs-stat-row">DEF <span>2</span></div>
+      </div>
+      <div class="cs-perk">✦ 2回攻撃 / 逃走率90%</div>
+    </div>
+    <div class="cs-card" onclick="selectClass('cleric')" id="card-cleric">
+      <span class="cs-icon" style="color:#f5c842">✙</span>
+      <span class="cs-name">僧侶</span>
+      <div class="cs-desc">回復魔法の達人。戦闘後に自動回復する粘り強さが強み。</div>
+      <div class="cs-stats">
+        <div class="cs-stat-row">HP <span>24</span></div>
+        <div class="cs-stat-row">MP <span>16</span></div>
+        <div class="cs-stat-row">ATK <span>4</span></div>
+        <div class="cs-stat-row">DEF <span>3</span></div>
+      </div>
+      <div class="cs-perk">✦ 戦闘後HP+3自動回復</div>
+    </div>
+  </div>
+  <button id="cs-start" disabled onclick="beginGame()">▶ 冒険を始める</button>
+</div>
+
+<!-- ═══ SKILL SELECT MODAL (level-up) ═══ -->
+<div id="skill-modal">
+  <div id="skill-modal-inner">
+    <div id="skill-modal-title">⬆ LEVEL UP!</div>
+    <div id="skill-modal-sub">スキルを1つ選べ &nbsp;[←→で選択・Enterで決定]</div>
+    <div id="skill-cards"></div>
+  </div>
+</div>
+
+<!-- ═══ CLASS SKILL TREE MODAL ═══ -->
+<div id="classkill-modal">
+  <div id="classkill-inner">
+    <div id="classkill-title">★ 固有スキルツリー ★</div>
+    <div id="classkill-sp-display">スキルポイント: <span id="classkill-sp-val">0</span> SP</div>
+    <div id="classkill-sub">クリックで習得 / SP消費</div>
+    <div id="classkill-grid"></div>
+    <button id="classkill-close" onclick="closeClassSkillTree()">▶ 閉じる</button>
+  </div>
+</div>
+
+<!-- ═══ SHOP MODAL ═══ -->
+<div id="shop-modal">
+  <div id="shop-modal-inner">
+    <div id="shop-title">🏪 商売屋</div>
+    <div id="shop-gold-display">所持金: <span id="shop-gold-val">0</span>G</div>
+    <div id="shop-sub">何を買う？（クリックで購入）</div>
+    <div id="shop-items-grid"></div>
+    <button id="shop-close-btn" onclick="closeShop()">▶ 店を出る</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN GAME UI ═══ -->
+<div id="title">☠ DUNGEON CRAWLER ☠</div>
+<div id="subtitle">ROGUELIKE / PIXEL EDITION</div>
+
+<div id="game-wrap">
+  <!-- LEFT -->
+  <div id="left-col">
+    <div id="map-container">
+      <canvas id="map" width="480" height="320"></canvas>
+      <canvas id="popup-canvas" width="480" height="320"></canvas>
+    </div>
+    <div id="move-hint">[ W A S D ] / 矢印キー：移動 &nbsp;|&nbsp; F/Enter：決定 &nbsp;|&nbsp; 🏪 商売屋：入店 &nbsp;|&nbsp; SP：固有スキルツリー</div>
+    <div id="log-box"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right-col">
+    <div id="floor-badge">
+      FLOOR <span id="floor-num">1</span>
+      <div id="class-badge"></div>
+    </div>
+
+    <!-- SP バッジ（クリックでスキルツリー） -->
+    <div id="sp-badge" onclick="openClassSkillTree()">
+      <div class="sp-label">SKILL POINT</div>
+      <div><span id="sp-val">0</span> SP</div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="panel">
+      <div class="panel-title">▶ STATUS</div>
+      <div class="bar-row">
+        <div class="bar-label">HP</div>
+        <div class="bar-track">
+          <div class="bar-fill hp" id="hp-bar" style="width:100%"></div>
+          <div class="bar-text" id="hp-text">20/20</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">MP</div>
+        <div class="bar-track">
+          <div class="bar-fill mp" id="mp-bar" style="width:100%"></div>
+          <div class="bar-text" id="mp-text">10/10</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-item">ATK <span id="s-atk">5</span></div>
+        <div class="stat-item">DEF <span id="s-def">2</span></div>
+        <div class="stat-item">LVL <span id="s-lv">1</span></div>
+        <div class="stat-item">EXP <span id="s-exp">0</span></div>
+        <div class="stat-item">GOLD <span id="s-gold" style="color:#f5c842">0</span></div>
+        <div class="stat-item">KILL <span id="s-kill">0</span></div>
+      </div>
+      <!-- EXP バー -->
+      <div class="exp-bar-row">
+        <div class="exp-bar-label">EXP <span id="exp-bar-text">0/10</span></div>
+        <div class="exp-bar-track">
+          <div class="exp-bar-fill" id="exp-bar-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EQUIPMENT -->
+    <div class="panel">
+      <div class="panel-title">▶ EQUIP</div>
+      <div class="equip-slot">
+        <span class="slot-label">⚔WPN</span>
+        <div class="slot-detail">
+          <span class="slot-val empty" id="eq-wpn">なし</span>
+          <span class="slot-bonus" id="eq-wpn-bonus"></span>
+        </div>
+      </div>
+      <div class="equip-slot">
+        <span class="slot-label">🛡ARM</span>
+        <div class="slot-detail">
+          <span class="slot-val empty" id="eq-arm">なし</span>
+          <span class="slot-bonus" id="eq-arm-bonus"></span>
+        </div>
+      </div>
+      <div class="equip-slot">
+        <span class="slot-label">💍ACC</span>
+        <div class="slot-detail">
+          <span class="slot-val empty" id="eq-acc">なし</span>
+          <span class="slot-bonus" id="eq-acc-bonus"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACQUIRED SKILLS -->
+    <div class="panel">
+      <div class="panel-title">▶ SKILLS</div>
+      <div id="skill-list"><span style="color:#444;font-size:7px">まだなし</span></div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="panel">
+      <div class="panel-title">▶ ITEMS</div>
+      <div id="item-list"><span style="color:#444">アイテムなし</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COMBAT PANEL ═══ -->
+<div id="combat-panel">
+  <div id="battle-enemy-area">
+    <div id="enemy-sprite-box">
+      <canvas id="enemy-sprite-canvas" width="96" height="96"></canvas>
+    </div>
+    <div id="enemy-info-block">
+      <div id="enemy-type-badge"></div>
+      <div id="enemy-name">ENEMY</div>
+      <div id="enemy-intent"></div>
+      <div id="enemy-hp-label-row">
+        <span id="enemy-label">HP</span>
+        <span id="enemy-hp-nums">--/--</span>
+      </div>
+      <div id="enemy-hp-wrap"><div id="en-bar"></div></div>
+    </div>
+  </div>
+
+  <div id="battle-divider"></div>
+
+  <div id="battle-command-area">
+    <div id="battle-player-info">
+      <div class="battle-stat-row">
+        <span class="bstat-label">HP</span>
+        <div class="bstat-bar-wrap"><div class="bstat-bar hp" id="b-hp-bar"></div></div>
+        <span class="bstat-val" id="b-hp-text">--/--</span>
+      </div>
+      <div class="battle-stat-row">
+        <span class="bstat-label">MP</span>
+        <div class="bstat-bar-wrap"><div class="bstat-bar mp" id="b-mp-bar"></div></div>
+        <span class="bstat-val" id="b-mp-text">--/--</span>
+      </div>
+    </div>
+
+    <!-- 2×2 コマンドグリッド -->
+    <div id="battle-commands">
+      <div class="battle-command selected" data-cmd="atk" data-row="0" data-col="0">
+        <span class="bcmd-arrow">▶</span><span class="bcmd-text">たたかう</span>
+      </div>
+      <div class="battle-command" data-cmd="mag" data-row="0" data-col="1">
+      <span class="bcmd-text">スキル</span>
+      </div>
+      <div class="battle-command" data-cmd="itm" data-row="1" data-col="0">
+        <span class="bcmd-arrow">▶</span><span class="bcmd-text">アイテム</span>
+      </div>
+      <div class="battle-command" data-cmd="run" data-row="1" data-col="1">
+        <span class="bcmd-arrow">▶</span><span class="bcmd-text">にげる</span>
+      </div>
+    </div>
+
+    <!-- アイテムサブメニュー -->
+    <div id="item-submenu">
+      <div id="item-submenu-title">🧪 アイテムを使う [↑↓選択・Enter決定・X/Escで戻る]</div>
+    </div>
+
+    <div id="battle-hint">↑↓←→ 選択 &nbsp; F/Enter 決定</div>
+  </div>
+</div>
+
+<!-- アイテムサブメニュー -->
+<div id="item-submenu">
+  <div id="item-submenu-title">🧪 アイテムを使う [↑↓選択・Enter決定・X/Escで戻る]</div>
+</div>
+
+<div id="battle-hint">↑↓←→ 選択 &nbsp; F/Enter 決定</div>
+
+<!-- WIN OVERLAY -->
+<div id="win-overlay">
+  <div id="win-title">★ GAME CLEAR ★</div>
+  <div id="win-subtitle">— DUNGEON CONQUERED —</div>
+  <div id="win-stars">
+    <span>★</span><span>★</span><span>★</span>
+  </div>
+  <div id="win-stats"></div>
+  <div id="win-message"></div>
+  <button id="win-btn" onclick="retryGame()">▶ もう一度挑む</button>
+</div>
+
+<!-- GAME OVER OVERLAY -->
+<div id="overlay">
+  <div id="overlay-title">GAME OVER</div>
+  <div id="overlay-sub"></div>
+  <button class="ov-btn" onclick="retryGame()">▶ もう一度</button>
+</div>
+
+<!-- FLOOR FLASH -->
+<div id="floor-flash"></div>
+
+<script src="dungeon.js"></script>
+<script src="dungeon_additions.js"></script>
+
+<div id="mobile-controls">
+  <button id="btn-up">▲</button>
+  <div>
+    <button id="btn-left">◀</button>
+    <button id="btn-down">▼</button>
+    <button id="btn-right">▶</button>
+  </div>
+  <button id="btn-action">決定</button>
+</div>
+
+</body>
+</html>

@@ -1846,10 +1846,57 @@ function getSkillChoices(p) {
   const classId = Object.keys(CLASSES).find(k => CLASSES[k] === G.playerClass) || 'warrior';
   const owned = new Set(p.skills.map(s => s.id));
 
-  let pool;
+  const warriorLvSkills = [
+    {
+      id: 'w_lv_hp_up', name: '戦士の肉体', icon: '💪', type: 'boost',
+      desc: '最大HP+15、現在HPも+15',
+      apply: p => { p.maxHp += 15; p.hp = Math.min(p.hp + 15, p.maxHp); }
+    },
+    {
+      id: 'w_lv_atk_up', name: '剛腕', icon: '⚔', type: 'boost',
+      desc: 'ATK+5',
+      apply: p => { p.atk += 5; }
+    },
+    {
+      id: 'w_lv_def_up', name: '鉄壁の守り', icon: '🛡', type: 'boost',
+      desc: 'DEF+4',
+      apply: p => { p.def += 4; }
+    },
+    {
+      id: 'w_lv_crit', name: '会心の極意', icon: '⚡', type: 'passive',
+      desc: '会心率+15%、会心ダメージ×0.5倍追加',
+      apply: p => {
+        p.passives.critRate = (p.passives.critRate || 0) + 0.15;
+        p.passives.critMult = (p.passives.critMult || 2) + 0.5;
+      }
+    },
+    {
+      id: 'w_lv_leech', name: '血の渇望', icon: '🩸', type: 'passive',
+      desc: '通常攻撃ダメージの30%をHP回復',
+      apply: p => { p.passives.leech = (p.passives.leech || 0) + 0.3; }
+    },
+    {
+      id: 'w_lv_thorns', name: '返し刃', icon: '🌵', type: 'passive',
+      desc: '受けたダメージの25%を敵に反射',
+      apply: p => { p.passives.thorns = (p.passives.thorns || 0) + 0.25; }
+    },
+    {
+      id: 'w_lv_regen', name: '戦士の回復力', icon: '🌿', type: 'passive',
+      desc: '移動ごとにHP+2回復',
+      apply: p => { p.passives.regen = (p.passives.regen || 0) + 2; }
+    },
+    {
+      id: 'w_lv_pierce', name: '貫通撃', icon: '🏹', type: 'active',
+      desc: '通常攻撃が敵のDEFを無視する',
+      apply: p => { p.passives.pierce = true; }
+    },
+  ];
+
+  let pool = [];
+  let classSpecificIds = new Set();
 
   if (classId === 'rogue') {
-    // 盗賊：専用レベルアッププール
+    classSpecificIds = new Set(ROGUE_LEVELUP_SKILLS.map(s => s.id));
     pool = ROGUE_LEVELUP_SKILLS.filter(s => !owned.has(s.id));
     if (pool.length < 3) {
       const generic = ALL_SKILLS.filter(s => !owned.has(s.id) && !s.onlyClass);
@@ -1857,64 +1904,21 @@ function getSkillChoices(p) {
     }
 
   } else if (classId === 'warrior') {
-    // 戦士：汎用スキル＋戦士専用レベルアップスキル
-    const warriorLvSkills = [
-      {
-        id: 'w_lv_hp_up', name: '戦士の肉体', icon: '💪', type: 'boost',
-        desc: '最大HP+15、現在HPも+15',
-        apply: p => { p.maxHp += 15; p.hp = Math.min(p.hp + 15, p.maxHp); }
-      },
-      {
-        id: 'w_lv_atk_up', name: '剛腕', icon: '⚔', type: 'boost',
-        desc: 'ATK+5',
-        apply: p => { p.atk += 5; }
-      },
-      {
-        id: 'w_lv_def_up', name: '鉄壁の守り', icon: '🛡', type: 'boost',
-        desc: 'DEF+4',
-        apply: p => { p.def += 4; }
-      },
-      {
-        id: 'w_lv_crit', name: '会心の極意', icon: '⚡', type: 'passive',
-        desc: '会心率+15%、会心ダメージ×0.5倍追加',
-        apply: p => {
-          p.passives.critRate = (p.passives.critRate || 0) + 0.15;
-          p.passives.critMult = (p.passives.critMult || 2) + 0.5;
-        }
-      },
-      {
-        id: 'w_lv_leech', name: '血の渇望', icon: '🩸', type: 'passive',
-        desc: '通常攻撃ダメージの30%をHP回復',
-        apply: p => { p.passives.leech = (p.passives.leech || 0) + 0.3; }
-      },
-      {
-        id: 'w_lv_thorns', name: '返し刃', icon: '🌵', type: 'passive',
-        desc: '受けたダメージの25%を敵に反射',
-        apply: p => { p.passives.thorns = (p.passives.thorns || 0) + 0.25; }
-      },
-      {
-        id: 'w_lv_regen', name: '戦士の回復力', icon: '🌿', type: 'passive',
-        desc: '移動ごとにHP+2回復',
-        apply: p => { p.passives.regen = (p.passives.regen || 0) + 2; }
-      },
-      {
-        id: 'w_lv_pierce', name: '貫通撃', icon: '🏹', type: 'active',
-        desc: '通常攻撃が敵のDEFを無視する',
-        apply: p => { p.passives.pierce = true; }
-      },
-    ];
+    classSpecificIds = new Set(warriorLvSkills.map(s => s.id));
     const availWarrior = warriorLvSkills.filter(s => !owned.has(s.id));
     const generic = ALL_SKILLS.filter(s => !owned.has(s.id) && !s.onlyClass);
     pool = [...availWarrior, ...generic];
 
   } else if (classId === 'cleric') {
+    classSpecificIds = new Set(CLERIC_LEVELUP_SKILLS.map(s => s.id));
     pool = CLERIC_LEVELUP_SKILLS.filter(s => !owned.has(s.id));
     if (pool.length < 3) {
       const generic = ALL_SKILLS.filter(s => !owned.has(s.id) && !s.onlyClass);
       pool = [...pool, ...generic];
     }
+
   } else {
-    // 魔法使い：汎用＋クラス専用
+    // 魔法使い
     pool = ALL_SKILLS.filter(s => {
       if (owned.has(s.id)) return false;
       if (s.onlyClass && s.onlyClass !== classId) return false;
@@ -1922,29 +1926,30 @@ function getSkillChoices(p) {
     });
   }
 
-  // 職業専用スキルを優先して出やすくする重み付き抽選
-  const classSpecificIds = new Set(
-    classId === 'warrior'
-      ? warriorLvSkills.map(s => s.id)
-      : classId === 'rogue'
-        ? ROGUE_LEVELUP_SKILLS.map(s => s.id)
-        : []
-  );
-
-  // 専用スキルは3枚、汎用は1枚としてプールに積む
+ // 職業専用スキルを優先抽選（専用が残っていれば必ず1枚以上入れる）
   const weighted = [];
-  for (const s of pool) {
-    if (classSpecificIds.has(s.id)) {
-      // 専用スキルは3回追加（約3倍出やすい）
-      weighted.push(s, s, s);
-    } else {
-      weighted.push(s);
-    }
+  const specificPool = pool.filter(s => classSpecificIds.has(s.id));
+  const genericPool = pool.filter(s => !classSpecificIds.has(s.id));
+
+  // 専用スキルは5倍の重み
+  for (const s of specificPool) {
+    weighted.push(s, s, s, s, s);
+  }
+  for (const s of genericPool) {
+    weighted.push(s);
   }
 
-  // シャッフルして重複なく3つ選ぶ
   const result = [];
   const used = new Set();
+
+  // 専用スキルが残っていれば最低1枠は確定で入れる
+  if (specificPool.length > 0) {
+    const pick = specificPool[Math.floor(Math.random() * specificPool.length)];
+    used.add(pick.id);
+    result.push(pick);
+  }
+
+  // 残り枠を重み付き抽選で埋める
   const shuffledWeighted = weighted.sort(() => Math.random() - 0.5);
   for (const s of shuffledWeighted) {
     if (!used.has(s.id)) {
@@ -2317,7 +2322,7 @@ mapCanvas.addEventListener('touchend', e => {
 const CLASS_SKILL_TREES = {
   warrior: [
     {
-      id: 'w_heavy_slash', name: '重攻撃', icon: '⚔', cost: 1, req: null,
+      id: '_heavy_slash', name: '重攻撃', icon: '⚔', cost: 1, req: null,
       desc: 'ATK×1.5、敵DEF無視（MP3消費）',
       apply: p => {
         if (!p.skillCommands) p.skillCommands = [];

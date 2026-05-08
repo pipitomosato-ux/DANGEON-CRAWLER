@@ -25,7 +25,7 @@ const sctx = spriteCanvas.getContext('2d');
 const CLASSES = {
   warrior: {
     name: '戦士', icon: '⚔', color: '#e84040',
-    hp: 30, mp: 10, atk: 7, def: 4,
+    hp: 35, mp: 10, atk: 11, def: 8,
     perk: null,
     startItems: [{ name: '回復薬', type: 'heal', val: 15, qty: 1 }],
     startSkillCommands: [],
@@ -598,6 +598,8 @@ const ALL_SKILLS = [
     desc: '通常攻撃ダメージの25%をHP回復',
     apply: p => { p.passives.leech = (p.passives.leech || 0) + 0.25; }
   },
+
+  // 削除する2項目（ALL_SKILLS から取り除く）
   {
     id: 'regen', name: '自然回復', icon: '🌿', type: 'passive',
     desc: '移動ごとにHP+1（最大まで）',
@@ -608,6 +610,7 @@ const ALL_SKILLS = [
     desc: '移動ごとにMP+1（最大まで）',
     apply: p => { p.passives.mpRegen = (p.passives.mpRegen || 0) + 1; }
   },
+
   {
     id: 'lucky', name: '強運', icon: '🍀', type: 'passive',
     desc: 'アイテムドロップ率+30%',
@@ -814,8 +817,41 @@ function generateShopStock(floor) {
     });
   }
 
-  const skillPool = [...ALL_SKILLS].sort(() => Math.random() - 0.5).slice(0, 3);
-  skillPool.forEach(s => {
+  // 商売屋限定スキルプール（HP循環・魔力循環を含む）
+  const SHOP_EXCLUSIVE_SKILLS = [
+    {
+      id: 'regen', name: '自然回復', icon: '🌿', type: 'passive',
+      desc: '移動ごとにHP+1（最大まで）',
+      apply: p => { p.passives.regen = (p.passives.regen || 0) + 1; }
+    },
+    {
+      id: 'mp_regen', name: '魔力循環', icon: '🔵', type: 'passive',
+      desc: '移動ごとにMP+1（最大まで）',
+      apply: p => { p.passives.mpRegen = (p.passives.mpRegen || 0) + 1; }
+    },
+  ];
+
+  // 通常スキルプールからregen/mp_regenを除外し、商売屋限定を追加
+  const generalSkillPool = ALL_SKILLS.filter(s =>
+    s.id !== 'regen' && s.id !== 'mp_regen'
+  );
+
+  // 商売屋限定を必ず1〜2枠確保、残りを通常スキルで埋める
+  const shuffledExclusive = [...SHOP_EXCLUSIVE_SKILLS].sort(() => Math.random() - 0.5);
+  const shuffledGeneral = [...generalSkillPool].sort(() => Math.random() - 0.5);
+
+  // 限定スキルの枠数をランダムに1〜2枠
+  const exclusiveSlots = 1 + Math.floor(Math.random() * 2); // 1 or 2
+  const skillPick = [];
+
+  for (let i = 0; i < exclusiveSlots && i < shuffledExclusive.length; i++) {
+    skillPick.push(shuffledExclusive[i]);
+  }
+  for (let i = 0; skillPick.length < 3 && i < shuffledGeneral.length; i++) {
+    skillPick.push(shuffledGeneral[i]);
+  }
+
+  skillPick.forEach(s => {
     stock.push({
       kind: 'skill', icon: s.icon, tag: 'skill',
       name: s.name, desc: s.desc, skillRef: s,
@@ -897,28 +933,28 @@ function buyShopItem(idx) {
 //  ENEMY TYPES
 // ══════════════════════════════════════════════════════════
 const ENEMY_TYPES = [
-  { name: 'スライム', hp: 6, atk: 2, def: 0, exp: 3, gold: 2, color: '#3ecc6f' },
-  { name: 'コウモリ', hp: 4, atk: 3, def: 0, exp: 3, gold: 1, color: '#888888' },
-  { name: 'スケルトン', hp: 10, atk: 4, def: 1, exp: 6, gold: 4, color: '#dddddd' },
-  { name: 'オーク', hp: 15, atk: 5, def: 2, exp: 8, gold: 6, color: '#8fbc5a' },
-  { name: 'ゴブリン', hp: 8, atk: 4, def: 1, exp: 5, gold: 3, color: '#ff9900' },
-  { name: 'ゾンビ', hp: 18, atk: 6, def: 1, exp: 10, gold: 5, color: '#66cc88' },
-  { name: 'デーモン', hp: 25, atk: 8, def: 3, exp: 15, gold: 10, color: '#cc0066' },
-  { name: 'ドラゴン', hp: 40, atk: 12, def: 5, exp: 30, gold: 20, color: '#ff4400' },
+  { name: 'スライム', hp: 6, atk: 2, def: 0, exp: 3, gold: 15, color: '#3ecc6f' },
+  { name: 'コウモリ', hp: 4, atk: 3, def: 0, exp: 3, gold: 20, color: '#888888' },
+  { name: 'スケルトン', hp: 10, atk: 4, def: 1, exp: 6, gold: 25, color: '#dddddd' },
+  { name: 'オーク', hp: 15, atk: 5, def: 2, exp: 8, gold: 30, color: '#8fbc5a' },
+  { name: 'ゴブリン', hp: 8, atk: 4, def: 1, exp: 5, gold: 35, color: '#ff9900' },
+  { name: 'ゾンビ', hp: 18, atk: 6, def: 1, exp: 10, gold: 20, color: '#66cc88' },
+  { name: 'デーモン', hp: 25, atk: 8, def: 3, exp: 15, gold: 35, color: '#cc0066' },
+  { name: 'ドラゴン', hp: 35, atk: 10, def: 4, exp: 30, gold: 50, color: '#ff4400' },
 ];
 
 const ELITE_TYPES = [
-  { name: '死神騎士', hp: 35, atk: 10, def: 4, exp: 20, gold: 15, color: '#cc44ff', special: 'drain' },
-  { name: '溶岩巨人', hp: 50, atk: 8, def: 6, exp: 25, gold: 18, color: '#ff6622', special: 'burn' },
-  { name: '影の暗殺者', hp: 22, atk: 14, def: 2, exp: 22, gold: 20, color: '#8844ff', special: 'crit' },
-  { name: '魔将軍', hp: 45, atk: 11, def: 5, exp: 28, gold: 22, color: '#ff44aa', special: 'buff' },
+  { name: '死神騎士', hp: 35, atk: 10, def: 4, exp: 20, gold: 80, color: '#cc44ff', special: 'drain' },
+  { name: '溶岩巨人', hp: 50, atk: 8, def: 6, exp: 25, gold: 80, color: '#ff6622', special: 'burn' },
+  { name: '影の暗殺者', hp: 22, atk: 14, def: 2, exp: 22, gold: 80, color: '#8844ff', special: 'crit' },
+  { name: '魔将軍', hp: 45, atk: 11, def: 5, exp: 28, gold: 80, color: '#ff44aa', special: 'buff' },
 ];
 
 const BOSS_TYPES = [
-  { name: '地下王 ゴーレム', hp: 80, atk: 12, def: 6, exp: 50, gold: 40, color: '#8899aa', special: 'slam', phase2Atk: 16 },
-  { name: '炎王 イフリート', hp: 100, atk: 15, def: 5, exp: 70, gold: 55, color: '#ff4400', special: 'burn', phase2Atk: 20 },
-  { name: '深淵龍 ヴォルグ', hp: 130, atk: 18, def: 8, exp: 100, gold: 80, color: '#aa22ff', special: 'drain', phase2Atk: 25 },
-  { name: '魔王 ダルクロア', hp: 180, atk: 22, def: 10, exp: 150, gold: 120, color: '#ff2266', special: 'buff', phase2Atk: 30 },
+  { name: '地下王 ゴーレム', hp: 80, atk: 12, def: 6, exp: 50, gold: 150, color: '#8899aa', special: 'slam', phase2Atk: 16 },
+  { name: '炎王 イフリート', hp: 100, atk: 15, def: 5, exp: 70, gold: 200, color: '#ff4400', special: 'burn', phase2Atk: 20 },
+  { name: '深淵龍 ヴォルグ', hp: 130, atk: 18, def: 8, exp: 100, gold: 300, color: '#aa22ff', special: 'drain', phase2Atk: 25 },
+  { name: '魔王 ダルクロア', hp: 180, atk: 22, def: 10, exp: 150, gold: 10000000, color: '#ff2266', special: 'buff', phase2Atk: 30 },
 ];
 
 // ══════════════════════════════════════════════════════════
@@ -1749,7 +1785,7 @@ function normalEnemyHit(e, atkValue) {
     spawnPopup(G.px, G.py, `-${dmg}`, '#ff4444');
     log(`${e.name}の攻撃！ ${dmg}ダメージ！`, 'combat');
   }
-  if (p.hp <= 0) gameOver();
+  if (p.hp <= 0 && !p.passives._miracleReady && !p.passives._divineRevive && !p.passives.resurrection) gameOver();
   updateBattlePlayerBars();
   updateUI();
 }
@@ -1926,7 +1962,7 @@ function getSkillChoices(p) {
     });
   }
 
- // 職業専用スキルを優先抽選（専用が残っていれば必ず1枚以上入れる）
+  // 職業専用スキルを優先抽選（専用が残っていれば必ず1枚以上入れる）
   const weighted = [];
   const specificPool = pool.filter(s => classSpecificIds.has(s.id));
   const genericPool = pool.filter(s => !classSpecificIds.has(s.id));
@@ -2182,11 +2218,14 @@ function gameOver() {
 }
 
 function retryGame() {
-  // 戦闘状態をリセット
-  G.inCombat = false;
-  G.currentEnemy = null;
-  G.inShop = false;
-  G.pendingSkillChoices = null;
+  // ゲーム状態を完全リセット
+  G = {};
+  selectedClass = null;
+  combatMenuIndex = 0;
+
+  // サブメニュー系フラグリセット
+  if (typeof itemSubMenuActive !== 'undefined') itemSubMenuActive = false;
+  if (typeof skillSubMenuActive !== 'undefined') skillSubMenuActive = false;
 
   // 戦闘パネルを閉じる
   const panel = document.getElementById('combat-panel');
@@ -2194,7 +2233,6 @@ function retryGame() {
 
   // アイテムサブメニューを閉じる
   document.getElementById('item-submenu').classList.remove('active');
-  if (typeof itemSubMenuActive !== 'undefined') itemSubMenuActive = false;
 
   // スプライトcanvasをクリア
   if (typeof sctx !== 'undefined') {
@@ -2208,12 +2246,32 @@ function retryGame() {
   document.getElementById('shop-modal').classList.remove('active');
   document.getElementById('classkill-modal').classList.remove('active');
 
+  // フロア表示リセット
+  document.getElementById('floor-num').textContent = '1';
+  document.getElementById('class-badge').textContent = '';
+
+  // SPバッジリセット
+  const spVal = document.getElementById('sp-val');
+  if (spVal) spVal.textContent = '0';
+  const spBadge = document.getElementById('sp-badge');
+  if (spBadge) spBadge.classList.remove('has-sp');
+
+  // EXPバーリセット
+  const expFill = document.getElementById('exp-bar-fill');
+  if (expFill) expFill.style.width = '0%';
+  const expText = document.getElementById('exp-bar-text');
+  if (expText) expText.textContent = '0/10';
+
+  // ログをクリア
+  const logBox = document.getElementById('log-box');
+  if (logBox) logBox.innerHTML = '';
+
   // クラス選択に戻す
-  selectedClass = null;
   document.querySelectorAll('.cs-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('cs-start').disabled = true;
   document.getElementById('class-select').classList.add('active');
 }
+
 
 // ══════════════════════════════════════════════════════════
 //  CLASS SELECT
@@ -2308,6 +2366,12 @@ mapCanvas.addEventListener('touchend', e => {
   touchStart = null;
 });
 
+
+
+// ══════════════════════════════════════════════════════════
+//  dungeon_additions.js
+//  既存の dungeon.js の末尾に貼り付けてください
+// ══════════════════════════════════════════════════════════
 
 
 // ══════════════════════════════════════════════════════════
@@ -2948,10 +3012,13 @@ function gameWin() {
     }
 
     const counterRate = p.passives.counter || 0;
+
+    // 奇跡・神の裁き復活チェック用に呼び出し前HPを記録
+    const hpBefore = p.hp;
     _orig(e, atkValue);
 
-    // 奇跡・神の裁き復活チェック
-    if (p.hp <= 0) {
+    // 奇跡・神の裁き復活チェック（gameOver呼び出し前に割り込む）
+    if (p.hp <= 0 && hpBefore > 0) {
       if (p.passives._miracleReady && !p._miracleUsed) {
         p.hp = Math.floor(p.maxHp * 0.3);
         p.passives._miracleReady = false;
@@ -2970,6 +3037,7 @@ function gameWin() {
         return;
       }
     }
+
 
     // カウンター
     if (counterRate > 0 && e && e.hp > 0 && Math.random() < counterRate) {

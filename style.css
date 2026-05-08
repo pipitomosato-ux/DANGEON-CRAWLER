@@ -1,0 +1,2193 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --panel: #111118;
+  --border: #2a2a3a;
+  --gold: #f5c842;
+  --red: #e84040;
+  --green: #3ecc6f;
+  --blue: #4488ff;
+  --purple: #b06aff;
+  --cyan: #3ee8cc;
+  --white: #e8e8f0;
+  --dim: #666680;
+  --orange: #ff8c00;
+  --hp-bar: #e84040;
+  --mp-bar: #4488ff;
+  --battle-h: 170px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  image-rendering: pixelated;
+}
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px;
+  padding-bottom: calc(var(--battle-h) + 24px);
+}
+
+/* ── Titles ─── */
+#title {
+  color: var(--gold);
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 4px;
+  text-shadow: 2px 2px 0 #7a6200, 4px 4px 0 #3a2e00;
+  letter-spacing: 2px;
+}
+
+#subtitle {
+  color: var(--dim);
+  font-size: 7px;
+  text-align: center;
+  margin-bottom: 16px;
+  letter-spacing: 3px;
+}
+
+/* ── Layout ─── */
+#game-wrap {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 8px;
+  max-width: 720px;
+  width: 100%;
+}
+
+#left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Map ─── */
+#map-container {
+  position: relative;
+  border: 2px solid var(--border);
+  background: #050508;
+  line-height: 0;
+}
+
+#map-container canvas {
+  display: block;
+  width: 100%;
+}
+
+#popup-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── Log ─── */
+#log-box {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 8px;
+  height: 90px;
+  overflow-y: auto;
+  font-size: 8px;
+  line-height: 1.8;
+}
+
+#log-box .entry {
+  color: var(--dim);
+}
+
+#log-box .entry.combat {
+  color: var(--red);
+}
+
+#log-box .entry.loot {
+  color: var(--gold);
+}
+
+#log-box .entry.sys {
+  color: var(--cyan);
+}
+
+#log-box .entry.warn {
+  color: var(--purple);
+}
+
+#log-box .entry.good {
+  color: var(--green);
+}
+
+#log-box .entry.boss {
+  color: var(--orange);
+}
+
+#log-box .entry.elite {
+  color: #ff66aa;
+}
+
+#log-box .entry.shop {
+  color: #ffcc44;
+}
+
+/* ── Panels ─── */
+.panel {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 8px;
+}
+
+.panel-title {
+  color: var(--gold);
+  font-size: 7px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+/* ── Stat bars ─── */
+.bar-row {
+  margin-bottom: 5px;
+}
+
+.bar-label {
+  font-size: 7px;
+  color: var(--dim);
+  margin-bottom: 2px;
+}
+
+.bar-track {
+  height: 8px;
+  background: #1a1a22;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.2s;
+}
+
+.bar-fill.hp {
+  background: var(--hp-bar);
+}
+
+.bar-fill.mp {
+  background: var(--mp-bar);
+}
+
+.bar-text {
+  position: absolute;
+  right: 3px;
+  top: -1px;
+  font-size: 6px;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  font-size: 7px;
+  margin-top: 6px;
+}
+
+.stat-item {
+  color: var(--dim);
+}
+
+.stat-item span {
+  color: var(--white);
+}
+
+/* ── Equipment ─── */
+.equip-slot {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1a22;
+}
+
+.equip-slot:last-child {
+  border-bottom: none;
+}
+
+.slot-label {
+  color: var(--dim);
+  width: 38px;
+  flex-shrink: 0;
+  font-size: 6px;
+  padding-top: 1px;
+}
+
+.slot-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.slot-val {
+  color: var(--gold);
+  font-size: 7px;
+}
+
+.slot-val.empty {
+  color: var(--border);
+}
+
+.slot-bonus {
+  color: var(--green);
+  font-size: 6px;
+}
+
+/* ── Skills panel ─── */
+#skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.skill-tag {
+  font-size: 6px;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  color: var(--cyan);
+  background: #0a0a18;
+  line-height: 1.6;
+}
+
+/* ── Items ─── */
+#item-list {
+  font-size: 7px;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px solid #1a1a22;
+  cursor: pointer;
+}
+
+.item-row:hover {
+  color: var(--gold);
+}
+
+.item-row .qty {
+  color: var(--dim);
+}
+
+/* ── Floor/Class badge ─── */
+#floor-badge {
+  text-align: center;
+  font-size: 8px;
+  color: var(--gold);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 6px;
+}
+
+#class-badge {
+  font-size: 7px;
+  color: var(--cyan);
+  margin-top: 2px;
+}
+
+/* ── SP badge ─── */
+#sp-badge {
+  text-align: center;
+  font-size: 8px;
+  color: var(--purple);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 5px 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+#sp-badge:hover {
+  background: #1a0a2a;
+}
+
+#sp-badge .sp-label {
+  font-size: 6px;
+  color: var(--dim);
+  margin-bottom: 2px;
+}
+
+#sp-badge .sp-val {
+  color: var(--purple);
+}
+
+#sp-badge.has-sp {
+  border-color: var(--purple);
+  animation: sppulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sppulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #b06aff44
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px #b06aff22
+  }
+}
+
+/* ── Move hint ─── */
+#move-hint {
+  font-size: 7px;
+  color: var(--dim);
+  text-align: center;
+  padding: 4px;
+}
+
+/* ── Game Over overlay ─── */
+#overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#overlay.active {
+  display: flex;
+}
+
+#overlay-title {
+  font-size: 22px;
+  text-align: center;
+  text-shadow: 2px 2px 0 #000;
+}
+
+#overlay-sub {
+  font-size: 8px;
+  color: var(--dim);
+  text-align: center;
+  line-height: 2;
+}
+
+.ov-btn {
+  padding: 10px 20px;
+  background: #111;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.ov-btn:hover {
+  background: #1f1a00;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* ══════════════════════════════════
+   CLASS SELECT
+══════════════════════════════════ */
+#class-select {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #07070f;
+  z-index: 200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+
+#class-select.active {
+  display: flex;
+}
+
+#cs-title {
+  color: var(--gold);
+  font-size: 22px;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #5a4500, 4px 4px 0 #2a1e00;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+#cs-sub {
+  color: var(--dim);
+  font-size: 10px;
+  margin-bottom: 32px;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+#cs-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 720px;
+  width: 100%;
+}
+
+@media (min-width:680px) {
+  #cs-cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.cs-card {
+  background: #0d0d18;
+  border: 2px solid var(--border);
+  padding: 20px 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  position: relative;
+  user-select: none;
+}
+
+.cs-card:hover {
+  background: #13132a;
+  transform: translateY(-4px);
+  border-color: #444460;
+}
+
+.cs-card.selected {
+  border-color: var(--gold);
+  background: #1c1700;
+}
+
+.cs-card.selected::after {
+  content: '✔ 選択中';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--gold);
+  font-size: 8px;
+}
+
+.cs-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  display: block;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.cs-name {
+  color: var(--gold);
+  font-size: 12px;
+  margin-bottom: 10px;
+  display: block;
+  letter-spacing: 1px;
+}
+
+.cs-desc {
+  color: var(--dim);
+  font-size: 8px;
+  line-height: 2;
+  margin-bottom: 12px;
+  min-height: 48px;
+  text-align: left;
+}
+
+.cs-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  font-size: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 6px;
+}
+
+.cs-stat-row {
+  color: var(--dim);
+  text-align: left;
+}
+
+.cs-stat-row span {
+  color: var(--white);
+}
+
+.cs-perk {
+  font-size: 8px;
+  color: var(--cyan);
+  margin-top: 10px;
+  border-top: 1px solid #1a1a2a;
+  padding-top: 8px;
+  line-height: 2;
+  min-height: 36px;
+  text-align: left;
+}
+
+#cs-start {
+  margin-top: 28px;
+  padding: 14px 36px;
+  background: #0a0a00;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s;
+  letter-spacing: 2px;
+}
+
+#cs-start:hover {
+  background: #1f1a00;
+  transform: scale(1.04);
+}
+
+#cs-start:disabled {
+  opacity: 0.3;
+  cursor: default;
+  transform: none;
+}
+
+/* ══════════════════════════════════
+   SKILL SELECT MODAL (level-up)
+══════════════════════════════════ */
+#skill-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 150;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#skill-modal.active {
+  display: flex;
+}
+
+#skill-modal-inner {
+  background: #0c0c18;
+  border: 2px solid var(--gold);
+  padding: 28px 24px;
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 0 40px #f5c84244;
+}
+
+#skill-modal-title {
+  color: var(--gold);
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 8px;
+  text-shadow: 0 0 16px #f5c842cc;
+  animation: lvlpulse 0.6s ease-out;
+  letter-spacing: 2px;
+}
+
+@keyframes lvlpulse {
+  0% {
+    transform: scale(1.4);
+    opacity: 0.3
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1
+  }
+}
+
+#skill-modal-sub {
+  color: var(--dim);
+  font-size: 9px;
+  text-align: center;
+  margin-bottom: 22px;
+  letter-spacing: 3px;
+}
+
+#skill-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.skill-choice-card {
+  background: #0e0e1e;
+  border: 2px solid var(--border);
+  padding: 16px 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.skill-choice-card:hover,
+.skill-choice-card.focused {
+  border-color: var(--cyan);
+  background: #0f1a28;
+  transform: translateY(-4px);
+}
+
+.skill-choice-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.skill-choice-name {
+  color: var(--cyan);
+  font-size: 9px;
+  display: block;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.skill-choice-desc {
+  color: var(--dim);
+  font-size: 8px;
+  line-height: 1.9;
+  text-align: left;
+}
+
+.skill-choice-type {
+  font-size: 7px;
+  margin-top: 10px;
+  padding: 3px 6px;
+  border: 1px solid currentColor;
+  display: inline-block;
+}
+
+.type-passive {
+  color: var(--green);
+}
+
+.type-active {
+  color: var(--blue);
+}
+
+.type-boost {
+  color: var(--orange);
+}
+
+/* ══════════════════════════════════
+   CLASS SKILL TREE MODAL
+══════════════════════════════════ */
+#classkill-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.93);
+  z-index: 155;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#classkill-modal.active {
+  display: flex;
+}
+
+#classkill-inner {
+  background: #0c0c18;
+  border: 2px solid var(--purple);
+  padding: 24px 20px;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 0 40px #b06aff33;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+#classkill-title {
+  color: var(--purple);
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+}
+
+#classkill-sp-display {
+  color: var(--dim);
+  font-size: 9px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+#classkill-sp-display span {
+  color: var(--purple);
+}
+
+#classkill-sub {
+  color: var(--dim);
+  font-size: 8px;
+  text-align: center;
+  margin-bottom: 18px;
+  letter-spacing: 2px;
+}
+
+#classkill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+@media (min-width:560px) {
+  #classkill-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.classkill-card {
+  background: #0e0e1e;
+  border: 2px solid var(--border);
+  padding: 14px 10px;
+  text-align: center;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.classkill-card.available {
+  cursor: pointer;
+}
+
+.classkill-card.available:hover {
+  border-color: var(--purple);
+  background: #130a1e;
+  transform: translateY(-2px);
+}
+
+.classkill-card.owned {
+  border-color: #3a2a5a;
+  background: #0a0814;
+  opacity: 0.7;
+}
+
+.classkill-card.owned::after {
+  content: '習得済';
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 6px;
+  color: var(--purple);
+}
+
+.classkill-card.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.classkill-card.locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 10px;
+}
+
+.classkill-icon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.classkill-name {
+  color: var(--purple);
+  font-size: 8px;
+  display: block;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.classkill-desc {
+  color: var(--dim);
+  font-size: 7px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.classkill-cost {
+  font-size: 8px;
+  color: var(--purple);
+}
+
+.classkill-cost.unaffordable {
+  color: var(--red);
+}
+
+.classkill-req {
+  font-size: 6px;
+  color: #554466;
+  margin-top: 4px;
+}
+
+#classkill-close {
+  display: block;
+  margin: 0 auto;
+  padding: 10px 28px;
+  background: #0a0a00;
+  border: 2px solid var(--purple);
+  color: var(--purple);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+#classkill-close:hover {
+  background: #180a2a;
+}
+
+/* ══════════════════════════════════
+   SHOP MODAL
+══════════════════════════════════ */
+#shop-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 160;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#shop-modal.active {
+  display: flex;
+}
+
+#shop-modal-inner {
+  background: #0c0c14;
+  border: 2px solid #ffcc44;
+  padding: 24px 20px;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 0 32px #ffcc4433;
+}
+
+#shop-title {
+  color: #ffcc44;
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 6px;
+  text-shadow: 0 0 12px #ffcc44aa;
+  letter-spacing: 2px;
+}
+
+#shop-gold-display {
+  color: var(--dim);
+  font-size: 9px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+#shop-gold-display span {
+  color: #ffcc44;
+}
+
+#shop-sub {
+  color: var(--dim);
+  font-size: 8px;
+  text-align: center;
+  margin-bottom: 18px;
+  letter-spacing: 2px;
+}
+
+#shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.shop-item-card {
+  background: #0e0e1e;
+  border: 2px solid var(--border);
+  padding: 12px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  position: relative;
+}
+
+.shop-item-card:hover:not(.sold-out) {
+  border-color: #ffcc44;
+  background: #1a1500;
+  transform: translateY(-2px);
+}
+
+.shop-item-card.sold-out {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.shop-item-card.sold-out::after {
+  content: '売切';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--red);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.shop-item-card.cant-afford {
+  border-color: #333;
+}
+
+.shop-item-card.cant-afford .shop-price {
+  color: var(--red);
+}
+
+.shop-item-icon {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.shop-item-name {
+  color: var(--white);
+  font-size: 8px;
+  display: block;
+  margin-bottom: 6px;
+  line-height: 1.7;
+}
+
+.shop-item-desc {
+  color: var(--dim);
+  font-size: 7px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.shop-price {
+  color: #ffcc44;
+  font-size: 9px;
+}
+
+.shop-item-tag {
+  font-size: 6px;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.shop-tag-wpn {
+  color: var(--red);
+}
+
+.shop-tag-arm {
+  color: var(--blue);
+}
+
+.shop-tag-itm {
+  color: var(--green);
+}
+
+.shop-tag-skill {
+  color: var(--cyan);
+}
+
+#shop-close-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 12px 32px;
+  background: #0a0a00;
+  border: 2px solid #ffcc44;
+  color: #ffcc44;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+#shop-close-btn:hover {
+  background: #1f1a00;
+}
+
+/* ══════════════════════════════════
+   COMBAT PANEL
+══════════════════════════════════ */
+#combat-panel {
+  display: none;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: var(--battle-h);
+  background: #080810;
+  border-top: 3px solid #3a3a5a;
+  z-index: 50;
+  flex-direction: row;
+  align-items: stretch;
+  transform: translateY(100%);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#combat-panel.active {
+  display: flex;
+  transform: translateY(0);
+}
+
+#combat-panel.boss-fight {
+  border-top-color: var(--orange);
+  background: #0e0800;
+}
+
+#combat-panel.elite-fight {
+  border-top-color: #ff66aa;
+  background: #0e0012;
+}
+
+/* 左：敵エリア */
+#battle-enemy-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  width: 54%;
+  flex-shrink: 0;
+}
+
+#enemy-sprite-box {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  border: 2px solid #2a2a44;
+  background: #0a0a18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#enemy-sprite-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+#enemy-info-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+#enemy-type-badge {
+  font-size: 7px;
+  min-height: 12px;
+  letter-spacing: 1px;
+}
+
+.badge-boss {
+  color: var(--orange);
+}
+
+.badge-elite {
+  color: #ff66aa;
+}
+
+#enemy-name {
+  color: var(--white);
+  font-size: 10px;
+  letter-spacing: 1px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#enemy-intent {
+  font-size: 7px;
+  color: var(--dim);
+  min-height: 12px;
+  letter-spacing: 0.5px;
+}
+
+#enemy-intent.intent-atk {
+  color: #ff7777;
+}
+
+#enemy-intent.intent-buff {
+  color: var(--purple);
+}
+
+#enemy-intent.intent-heal {
+  color: var(--green);
+}
+
+#enemy-hp-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 4px;
+}
+
+#enemy-label {
+  font-size: 7px;
+  color: var(--dim);
+  letter-spacing: 1px;
+}
+
+#enemy-hp-nums {
+  font-size: 7px;
+  color: var(--white);
+}
+
+#enemy-hp-wrap {
+  width: 100%;
+  height: 10px;
+  background: #1a1a28;
+  border: 1px solid #3a3a5a;
+  margin-top: 3px;
+  position: relative;
+}
+
+#en-bar {
+  height: 100%;
+  width: 100%;
+  background: #e84040;
+  transition: width 0.25s ease, background 0.3s;
+}
+
+#en-bar.low {
+  background: #f5c842;
+}
+
+#en-bar.danger {
+  background: #e84040;
+}
+
+/* 仕切り */
+#battle-divider {
+  width: 2px;
+  background: #2a2a44;
+  align-self: stretch;
+  margin: 10px 0;
+  flex-shrink: 0;
+}
+
+/* 右：コマンドエリア */
+#battle-command-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  gap: 8px;
+  min-width: 0;
+  position: relative;
+}
+
+/* プレイヤーHP/MPバー */
+#battle-player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.battle-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bstat-label {
+  font-size: 7px;
+  color: var(--dim);
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.bstat-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: #1a1a28;
+  border: 1px solid #3a3a5a;
+  min-width: 0;
+}
+
+.bstat-bar {
+  height: 100%;
+  transition: width 0.25s ease;
+}
+
+.bstat-bar.hp {
+  background: #3ecc6f;
+}
+
+.bstat-bar.mp {
+  background: #4488ff;
+}
+
+.bstat-val {
+  font-size: 7px;
+  color: var(--white);
+  width: 54px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* コマンドメニュー（2×2グリッド） */
+#battle-commands {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.battle-command {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  background: #0e0e1c;
+  border: 1px solid #2a2a44;
+  cursor: pointer;
+  transition: background 0.08s;
+  line-height: 1;
+}
+
+.battle-command:hover {
+  background: #1a1a2e;
+  border-color: #4a4a6a;
+}
+
+.battle-command.selected {
+  background: #1a1a36;
+  border-color: var(--white);
+}
+
+.bcmd-arrow {
+  font-size: 7px;
+  color: var(--white);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.battle-command.selected .bcmd-arrow {
+  opacity: 1;
+  color: var(--gold);
+}
+
+.bcmd-text {
+  font-size: 8px;
+  color: var(--dim);
+}
+
+.battle-command.selected .bcmd-text {
+  color: var(--white);
+}
+
+/* ── アイテムサブメニュー ─── */
+#item-submenu {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: #08080f;
+  border: 1px solid #2a2a44;
+  flex-direction: column;
+  padding: 6px 8px;
+  gap: 3px;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+#item-submenu.active {
+  display: flex;
+}
+
+#item-submenu-title {
+  font-size: 7px;
+  color: var(--gold);
+  margin-bottom: 4px;
+  border-bottom: 1px solid #2a2a44;
+  padding-bottom: 3px;
+  letter-spacing: 1px;
+}
+
+.itm-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid #1a1a2a;
+  font-size: 7px;
+  cursor: pointer;
+  transition: background 0.08s;
+}
+
+.itm-sub-row.selected {
+  background: #1a1a36;
+  border-color: var(--gold);
+}
+
+.itm-sub-row:hover {
+  background: #12122a;
+}
+
+.itm-sub-arrow {
+  color: var(--gold);
+  opacity: 0;
+  font-size: 7px;
+}
+
+.itm-sub-row.selected .itm-sub-arrow {
+  opacity: 1;
+}
+
+.itm-sub-name {
+  color: var(--white);
+  flex: 1;
+}
+
+.itm-sub-qty {
+  color: var(--dim);
+}
+
+.itm-sub-cancel {
+  color: var(--red);
+  margin-top: 2px;
+  border-color: #3a1a1a !important;
+}
+
+.itm-sub-cancel .itm-sub-name {
+  color: var(--red);
+}
+
+/* キーヒント */
+#battle-hint {
+  position: absolute;
+  bottom: 4px;
+  right: 10px;
+  font-size: 6px;
+  color: #444460;
+  letter-spacing: 1px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DUNGEON CRAWLER — style.css 追加分
+   既存の style.css の末尾にそのまま貼り付けてください
+══════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════
+   GAME CLEAR / WIN OVERLAY
+══════════════════════════════════════════════════════════ */
+#win-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+#win-overlay.active {
+  display: flex;
+}
+
+/* 金の粒子エフェクト背景 */
+#win-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, #f5c84222 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, #b06aff22 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 80%, #3ecc6f18 0%, transparent 60%);
+  pointer-events: none;
+  animation: winbg 4s ease-in-out infinite alternate;
+}
+
+@keyframes winbg {
+  0% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1.2;
+  }
+}
+
+#win-title {
+  font-size: 26px;
+  color: var(--gold);
+  text-align: center;
+  text-shadow:
+    0 0 20px #f5c842cc,
+    2px 2px 0 #7a6200,
+    4px 4px 0 #3a2e00;
+  letter-spacing: 3px;
+  animation: winpulse 1.2s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes winpulse {
+  0% {
+    transform: scale(0.6) translateY(30px);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.08) translateY(-4px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+#win-subtitle {
+  font-size: 9px;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  text-align: center;
+  animation: fadein 1.2s 0.4s both;
+  position: relative;
+  z-index: 1;
+}
+
+#win-stars {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 4px 0;
+  animation: fadein 0.8s 0.6s both;
+  position: relative;
+  z-index: 1;
+}
+
+#win-stars span {
+  font-size: 28px;
+  animation: starfall 0.5s ease-out both;
+  display: inline-block;
+  filter: drop-shadow(0 0 8px #f5c842cc);
+}
+
+#win-stars span:nth-child(1) {
+  animation-delay: 0.7s;
+}
+
+#win-stars span:nth-child(2) {
+  animation-delay: 0.9s;
+}
+
+#win-stars span:nth-child(3) {
+  animation-delay: 1.1s;
+}
+
+@keyframes starfall {
+  0% {
+    transform: translateY(-20px) scale(0);
+    opacity: 0;
+  }
+
+  70% {
+    transform: translateY(4px) scale(1.2);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+#win-stats {
+  background: #0c0c18;
+  border: 2px solid var(--gold);
+  padding: 18px 28px;
+  font-size: 9px;
+  line-height: 2.6;
+  text-align: center;
+  color: var(--dim);
+  box-shadow: 0 0 24px #f5c84244;
+  animation: fadein 0.8s 1.0s both;
+  position: relative;
+  z-index: 1;
+  min-width: 260px;
+}
+
+#win-stats .win-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+#win-stats .win-stat-label {
+  color: var(--dim);
+}
+
+#win-stats .win-stat-val {
+  color: var(--gold);
+}
+
+#win-message {
+  font-size: 8px;
+  color: var(--dim);
+  text-align: center;
+  line-height: 2.2;
+  animation: fadein 0.8s 1.3s both;
+  position: relative;
+  z-index: 1;
+}
+
+#win-btn {
+  padding: 12px 28px;
+  background: #0a0a00;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: background 0.12s, transform 0.1s;
+  animation: fadein 0.8s 1.6s both;
+  position: relative;
+  z-index: 1;
+}
+
+#win-btn:hover {
+  background: #1f1a00;
+  transform: scale(1.04);
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FIXED GAME OVER OVERLAY（SP表示追加対応）
+   既存 #overlay-sub の line-height 補強
+══════════════════════════════════════════════════════════ */
+#overlay-sub {
+  line-height: 2.6;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ITEM SUBMENU（戦闘中アイテム選択）完成版
+   既存の #item-submenu スタイルを上書き補完
+══════════════════════════════════════════════════════════ */
+#item-submenu {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #08080f;
+  border: 1px solid #2a2a44;
+  flex-direction: column;
+  padding: 6px 8px;
+  gap: 3px;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+#item-submenu.active {
+  display: flex;
+}
+
+#item-submenu-title {
+  font-size: 7px;
+  color: var(--gold);
+  margin-bottom: 4px;
+  border-bottom: 1px solid #2a2a44;
+  padding-bottom: 3px;
+  letter-spacing: 1px;
+}
+
+.itm-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid #1a1a2a;
+  font-size: 7px;
+  cursor: pointer;
+  transition: background 0.08s;
+  user-select: none;
+}
+
+.itm-sub-row.selected {
+  background: #1a1a36;
+  border-color: var(--gold);
+}
+
+.itm-sub-row:hover {
+  background: #12122a;
+}
+
+.itm-sub-arrow {
+  color: var(--gold);
+  opacity: 0;
+  font-size: 7px;
+  width: 8px;
+  flex-shrink: 0;
+}
+
+.itm-sub-row.selected .itm-sub-arrow {
+  opacity: 1;
+}
+
+.itm-sub-name {
+  color: var(--white);
+  flex: 1;
+}
+
+.itm-sub-qty {
+  color: var(--dim);
+}
+
+.itm-sub-cancel {
+  color: var(--red) !important;
+  border-color: #3a1a1a !important;
+  margin-top: 2px;
+}
+
+.itm-sub-cancel .itm-sub-name {
+  color: var(--red);
+}
+
+.itm-sub-cancel .itm-sub-arrow {
+  color: var(--red);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLASS SKILL TREE MODAL — 完成版補完
+   ロック・習得済・利用可能のビジュアル強化
+══════════════════════════════════════════════════════════ */
+#classkill-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.93);
+  z-index: 155;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#classkill-modal.active {
+  display: flex;
+}
+
+#classkill-inner {
+  background: #0c0c18;
+  border: 2px solid var(--purple);
+  padding: 24px 20px;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 0 40px #b06aff33;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+#classkill-title {
+  color: var(--purple);
+  font-size: 15px;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px #b06aff88;
+}
+
+#classkill-sp-display {
+  color: var(--dim);
+  font-size: 9px;
+  text-align: center;
+  margin-bottom: 3px;
+}
+
+#classkill-sp-display span {
+  color: var(--purple);
+}
+
+#classkill-sub {
+  color: var(--dim);
+  font-size: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+#classkill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+@media (min-width: 560px) {
+  #classkill-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* カード基本 */
+.classkill-card {
+  background: #0e0e1e;
+  border: 2px solid var(--border);
+  padding: 14px 10px;
+  text-align: center;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  user-select: none;
+}
+
+/* 購入可能 */
+.classkill-card.available {
+  cursor: pointer;
+  border-color: #3a2a5a;
+}
+
+.classkill-card.available:hover {
+  border-color: var(--purple);
+  background: #130a1e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px #b06aff22;
+}
+
+/* 習得済 */
+.classkill-card.owned {
+  border-color: #3a2a5a;
+  background: #0a0814;
+  opacity: 0.75;
+}
+
+.classkill-card.owned::after {
+  content: '✔ 習得済';
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 6px;
+  color: var(--purple);
+}
+
+/* ロック中 */
+.classkill-card.locked {
+  opacity: 0.32;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.classkill-card.locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 10px;
+}
+
+/* SP不足 */
+.classkill-card.cant-afford:not(.owned):not(.locked) {
+  border-color: #3a1a1a;
+  cursor: not-allowed;
+}
+
+.classkill-card.cant-afford:not(.owned):not(.locked) .classkill-cost {
+  color: var(--red);
+}
+
+.classkill-icon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 4px #b06aff66);
+}
+
+.classkill-name {
+  color: var(--purple);
+  font-size: 8px;
+  display: block;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+  line-height: 1.6;
+}
+
+.classkill-desc {
+  color: var(--dim);
+  font-size: 7px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.classkill-cost {
+  font-size: 8px;
+  color: var(--purple);
+}
+
+.classkill-req {
+  font-size: 6px;
+  color: #554466;
+  margin-top: 4px;
+  line-height: 1.8;
+}
+
+#classkill-close {
+  display: block;
+  margin: 0 auto;
+  padding: 10px 28px;
+  background: #0a0a00;
+  border: 2px solid var(--purple);
+  color: var(--purple);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.12s;
+}
+
+#classkill-close:hover {
+  background: #180a2a;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SP バッジ — 完成版（取得SP表示・アニメ強化）
+══════════════════════════════════════════════════════════ */
+#sp-badge {
+  text-align: center;
+  font-size: 8px;
+  color: var(--purple);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 5px 6px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.15s;
+  user-select: none;
+}
+
+#sp-badge:hover {
+  background: #1a0a2a;
+  border-color: var(--purple);
+}
+
+#sp-badge .sp-label {
+  font-size: 6px;
+  color: var(--dim);
+  margin-bottom: 2px;
+  letter-spacing: 1px;
+}
+
+#sp-badge #sp-val {
+  color: var(--purple);
+}
+
+/* SPがあるときのパルスアニメ */
+#sp-badge.has-sp {
+  border-color: var(--purple);
+  animation: sppulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sppulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #b06aff44;
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px #b06aff22;
+  }
+}
+
+/* SPフロートポップアップ（+1SP などの通知） */
+.sp-popup {
+  position: fixed;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--purple);
+  text-shadow: 0 0 8px #b06aff;
+  pointer-events: none;
+  animation: spfloat 1.4s ease-out forwards;
+  z-index: 9999;
+}
+
+@keyframes spfloat {
+  0% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-50% - 40px)) translateX(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — 小画面対応
+══════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  #game-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  #right-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  #floor-badge,
+  #sp-badge {
+    grid-column: span 2;
+  }
+
+  #combat-panel {
+    height: auto;
+    min-height: 160px;
+  }
+
+  #battle-enemy-area {
+    width: 48%;
+    padding: 8px;
+  }
+
+  #enemy-sprite-box {
+    width: 72px;
+    height: 72px;
+  }
+
+  #enemy-sprite-canvas {
+    width: 72px;
+    height: 72px;
+  }
+
+  #win-stats {
+    padding: 14px 16px;
+    min-width: 0;
+    width: 90%;
+  }
+
+  #win-title {
+    font-size: 18px;
+  }
+
+  #skill-cards {
+    grid-template-columns: 1fr;
+  }
+
+  #classkill-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #shop-items-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   SCROLLBAR（全モーダル共通）
+══════════════════════════════════════════════════════════ */
+#classkill-inner::-webkit-scrollbar,
+#shop-modal-inner::-webkit-scrollbar,
+#skill-modal-inner::-webkit-scrollbar {
+  width: 4px;
+}
+
+#classkill-inner::-webkit-scrollbar-track,
+#shop-modal-inner::-webkit-scrollbar-track,
+#skill-modal-inner::-webkit-scrollbar-track {
+  background: #111;
+}
+
+#classkill-inner::-webkit-scrollbar-thumb,
+#shop-modal-inner::-webkit-scrollbar-thumb,
+#skill-modal-inner::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* ══════════════════════════════════════════════════════════
+   COMBAT PANEL — boss/elite 時の敵名エフェクト強化
+══════════════════════════════════════════════════════════ */
+#combat-panel.boss-fight #enemy-name {
+  color: var(--orange);
+  text-shadow: 0 0 10px #ff8c0088;
+}
+
+#combat-panel.elite-fight #enemy-name {
+  color: #ff66aa;
+  text-shadow: 0 0 8px #ff66aa66;
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXP バー（ステータスパネル下部に追加表示用）
+══════════════════════════════════════════════════════════ */
+.exp-bar-row {
+  margin-top: 6px;
+}
+
+.exp-bar-track {
+  height: 4px;
+  background: #1a1a22;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.exp-bar-fill {
+  height: 100%;
+  background: var(--purple);
+  transition: width 0.3s ease;
+}
+
+.exp-bar-label {
+  font-size: 6px;
+  color: var(--dim);
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.exp-bar-label span {
+  color: var(--purple);
+}
+
+/* ══════════════════════════════════════════════════════════
+   FLOOR TRANSITION FLASH（階段踏んだときのフラッシュ）
+══════════════════════════════════════════════════════════ */
+#floor-flash {
+  position: fixed;
+  inset: 0;
+  background: #f5c842;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 90;
+  transition: opacity 0.08s;
+}
+
+#floor-flash.flash {
+  animation: floorflash 0.4s ease-out forwards;
+}
+
+@keyframes floorflash {
+  0% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DAMAGE NUMBER POPUP（canvas上）— 既存補完
+══════════════════════════════════════════════════════════ */
+#popup-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BATTLE COMMAND — 選択アニメ強化
+══════════════════════════════════════════════════════════ */
+.battle-command {
+  transition: background 0.08s, border-color 0.08s, transform 0.06s;
+}
+
+.battle-command.selected {
+  transform: scale(1.02);
+}
+
+.battle-command:active {
+  transform: scale(0.97);
+}
+
+/* ══════════════════════════════════════════════════════════
+   SKILL MODAL — カードフォーカス時グロー
+══════════════════════════════════════════════════════════ */
+.skill-choice-card.focused {
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px #3ee8cc44;
+}
+
+/* ══════════════════════════════════════════════════════════
+   LOG BOX — ボス・SP ログ色
+══════════════════════════════════════════════════════════ */
+#log-box .entry.clear {
+  color: var(--gold);
+  font-weight: bold;
+}
+
+#log-box .entry.sp {
+  color: var(--purple);
+}
+
+#mobile-controls {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  z-index: 999;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#mobile-controls button {
+  font-family: 'Press Start 2P';
+  font-size: 10px;
+  padding: 10px;
+  background: #111;
+  color: white;
+  border: 2px solid #444;
+}
+
+/* スマホだけ表示 */
+@media (max-width: 600px) {
+  #mobile-controls {
+    display: flex;
+  }
+}
+

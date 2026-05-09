@@ -62,7 +62,37 @@
       <div class="cs-perk">✦ 戦闘後HP+3自動回復</div>
     </div>
   </div>
-  <button id="cs-start" disabled onclick="beginGame()">▶ 冒険を始める</button>
+  <button id="cs-library-btn" onclick="openLibrary()">📚 クリア履歴</button>
+  <div id="cs-mode-select" style="display:none">
+  <div style="color:#666680;font-size:9px;text-align:center;margin:16px 0;letter-spacing:2px">— モードを選べ —</div>
+  <div id="cs-mode-buttons">
+    <button class="cs-mode-btn" onclick="beginGame('normal')">
+      <span class="cs-mode-icon">⚔</span>
+      <span class="cs-mode-name">NORMAL</span>
+      <div class="cs-mode-desc">標準的な難易度。はじめての冒険に。</div>
+    </button>
+    <button class="cs-mode-btn locked" id="btn-hard" onclick="beginGame('hard')">
+      <span class="cs-mode-icon">💀</span>
+      <span class="cs-mode-name">HARD</span>
+      <div class="cs-mode-desc">ノーマルクリアで解放。過酷な25階の旅。</div>
+    </button>
+  </div>
+</div>
+<button id="cs-start" disabled onclick="showModeSelect()">▶ 冒険を始める</button>
+</div>
+
+<!-- ═══ LIBRARY MODAL ═══ -->
+<div id="library-modal">
+  <div id="library-inner">
+    <div id="library-title">📚 クリア履歴</div>
+    <div id="library-list"></div>
+    <div id="library-detail" style="display:none">
+      <div id="library-detail-title"></div>
+      <div id="library-detail-skills"></div>
+      <button onclick="closeLibraryDetail()">◀ 戻る</button>
+    </div>
+    <button onclick="closeLibrary()">✕ 閉じる</button>
+  </div>
 </div>
 
 <!-- ═══ SKILL SELECT MODAL (level-up) ═══ -->
@@ -287,7 +317,6 @@
 <div id="floor-flash"></div>
 
 <script src="dungeon.js"></script>
-<script src="dungeon_additions.js"></script>
 
 <div id="mobile-controls">
   <button id="btn-up">▲</button>

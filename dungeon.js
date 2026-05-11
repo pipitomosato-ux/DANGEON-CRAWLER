@@ -58,45 +58,61 @@ const CLASSES = {
 // ══════════════════════════════════════════════════════════
 const SKILL_COMMANDS = {
   // ─── 戦士 ───
-iron_wall: {
-  id: 'iron_wall', name: '鉄壁', icon: '🛡', mpCost: 3,
-  availableFor: ['warrior'],
-  desc: '3ターン間、被ダメ時にDEF×2/3の反撃ダメージ',
-  execute: (p, e) => {
-    const turns = 3 + (p.passives.ironWallBonus || 0);
-    p.passives._ironWallTurns = turns;
-    spawnPopup(G.px, G.py, '🛡鉄壁！', '#4488ff');
-    log(`鉄壁！ ${turns}ターン間、被ダメ時に反撃する！`, 'good');
-   return 0;
-  }
-},
+  kyusho_tsuki: {
+    id: 'kyusho_tsuki', name: '急所突き', icon: '🎯', mpCost: 5,
+    availableFor: ['warrior'],
+    desc: '会心率+50%でATK×0.7の攻撃',
+    execute: (p, e) => {
+      const critRate = (p.passives.critRate || 0) + 0.5;
+      const base = Math.max(1, Math.floor(p.atk * 0.7 + Math.floor(Math.random() * 3) - e.def));
+      const isCrit = Math.random() < critRate;
+      const dmg = isCrit ? Math.floor(base * (p.passives.critMult || 2)) : base;
+      e.hp -= dmg;
+      spawnPopup(e.x, e.y, isCrit ? `🎯💥${dmg}` : `🎯${dmg}`, isCrit ? '#f5c842' : '#ff8c00');
+      log(isCrit ? `急所突き・会心！ ${e.name}に${dmg}ダメージ！` : `急所突き！ ${e.name}に${dmg}ダメージ！`, 'combat');
+      return dmg;
+    }
+  },
 
-shield_bash: {
-  id: 'shield_bash', name: 'シールドバッシュ', icon: '🛡', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'DEFをATKとして扱って攻撃',
-  execute: (p, e) => {
-    const boost = p.passives.defDmgBoost || 1;
-    const dmg = Math.max(1, Math.floor((p.def + Math.floor(Math.random() * 3) - e.def) * boost));
-    e.hp -= dmg;
-    spawnPopup(e.x, e.y, `🛡${dmg}`, '#4488ff');
-    log(`シールドバッシュ！ ${e.name}に${dmg}ダメージ！`, 'combat');
-    return dmg;
-  }
-},
+  iron_wall: {
+    id: 'iron_wall', name: '鉄壁', icon: '🛡', mpCost: 3,
+    availableFor: ['warrior'],
+    desc: '3ターン間、被ダメ時にDEF×2/3の反撃ダメージ',
+    execute: (p, e) => {
+      const turns = 3 + (p.passives.ironWallBonus || 0);
+      p.passives._ironWallTurns = turns;
+      spawnPopup(G.px, G.py, '🛡鉄壁！', '#4488ff');
+      log(`鉄壁！ ${turns}ターン間、被ダメ時に反撃する！`, 'good');
+      return 0;
+    }
+  },
+
+  shield_bash: {
+    id: 'shield_bash', name: 'シールドバッシュ', icon: '🛡', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'DEFをATKとして扱って攻撃',
+    execute: (p, e) => {
+      const boost = p.passives.defDmgBoost || 1;
+      const dmg = Math.max(1, Math.floor((p.def + Math.floor(Math.random() * 3) - e.def) * boost));
+      e.hp -= dmg;
+      spawnPopup(e.x, e.y, `🛡${dmg}`, '#4488ff');
+      log(`シールドバッシュ！ ${e.name}に${dmg}ダメージ！`, 'combat');
+      return dmg;
+    }
+  },
 
   kiai_tame: {
-  id: 'kiai_tame', name: '気合ため', icon: '🎯', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: '次の攻撃の会心ダメージ×1.5倍バフ',
-  execute: (p, e) => {
-    p.passives._kiaiMult = (p.passives.critMult || 2) * 1.5;
-    p.passives._kiaiReady = true;
-    spawnPopup(G.px, G.py, '🎯気合ため！', '#f5c842');
-    log('気合ため！ 次の攻撃の会心ダメージが1.5倍になる！', 'warn');
-    return 0;
-  }
-},
+    id: 'kiai_tame', name: '気合ため', icon: '🎯', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: '次の攻撃の会心ダメージ×1.5倍バフ',
+    execute: (p, e) => {
+      p.passives._kiaiMult = (p.passives.critMult || 2) * 1.5;
+      p.passives._kiaiReady = true;
+      spawnPopup(G.px, G.py, '🎯気合ため！', '#f5c842');
+      log('気合ため！ 次の攻撃の会心ダメージが1.5倍になる！', 'warn');
+      return 0;
+    }
+  },
 
   multi_slash: {
     id: 'multi_slash', name: '乱れ切り', icon: '🌀', mpCost: 5,
@@ -116,27 +132,27 @@ shield_bash: {
       return total;
     }
   },// ─── 戦士追加スキル ───
- blood_awakening: {
-  id: 'blood_awakening', name: '血の覚醒', icon: '🔴', mpCost: 2,
-  availableFor: ['warrior'],
-  desc: 'HP50%以下でATK+40%、HP25%以下でさらに+40%（3ターン判定）',
-  execute: (p, e) => {
-    p.passives._bloodAwakeningTurns = 3;
-    const ratio = p.hp / p.maxHp;
-    let bonus = 0;
-    if (ratio <= 0.25) bonus = 0.8;
-    else if (ratio <= 0.5) bonus = 0.4;
-    if (bonus > 0) {
-      p.passives._bloodAwakeningBonus = bonus;
-      p.atk = Math.floor(p.atk * (1 + bonus));
-      spawnPopup(G.px, G.py, `🔴覚醒+${Math.floor(bonus*100)}%`, '#e84040');
-      log(`血の覚醒！ ATK+${Math.floor(bonus*100)}%！（残り3ターン）`, 'warn');
-    } else {
-      log('血の覚醒…HPがまだ高い、効果が出ない！', 'warn');
+  blood_awakening: {
+    id: 'blood_awakening', name: '血の覚醒', icon: '🔴', mpCost: 2,
+    availableFor: ['warrior'],
+    desc: 'HP50%以下でATK+40%、HP25%以下でさらに+40%（3ターン判定）',
+    execute: (p, e) => {
+      p.passives._bloodAwakeningTurns = 3;
+      const ratio = p.hp / p.maxHp;
+      let bonus = 0;
+      if (ratio <= 0.25) bonus = 0.8;
+      else if (ratio <= 0.5) bonus = 0.4;
+      if (bonus > 0) {
+        p.passives._bloodAwakeningBonus = bonus;
+        p.atk = Math.floor(p.atk * (1 + bonus));
+        spawnPopup(G.px, G.py, `🔴覚醒+${Math.floor(bonus * 100)}%`, '#e84040');
+        log(`血の覚醒！ ATK+${Math.floor(bonus * 100)}%！（残り3ターン）`, 'warn');
+      } else {
+        log('血の覚醒…HPがまだ高い、効果が出ない！', 'warn');
+      }
+      return 0;
     }
-    return 0;
-  }
-},
+  },
   armor_break: {
     id: 'armor_break', name: '鎧砕き', icon: '🔨', mpCost: 4,
     availableFor: ['warrior'],
@@ -166,24 +182,24 @@ shield_bash: {
       return dmg;
     }
   },
- rage_burst: {
-  id: 'rage_burst', name: '怒りの爆発', icon: '💢', mpCost: 4,
-  availableFor: ['warrior'],
-  desc: '怒りスタック（被ダメごと+1）×12のダメージ、スタック消費',
-  execute: (p, e) => {
-    const stacks = p.passives._rageStacks || 0;
-    if (stacks === 0) {
-      log('怒りスタックがない！ダメージを受けて溜めよう！', 'warn');
-      return 0;
+  rage_burst: {
+    id: 'rage_burst', name: '怒りの爆発', icon: '💢', mpCost: 4,
+    availableFor: ['warrior'],
+    desc: '怒りスタック（被ダメごと+1）×12のダメージ、スタック消費',
+    execute: (p, e) => {
+      const stacks = p.passives._rageStacks || 0;
+      if (stacks === 0) {
+        log('怒りスタックがない！ダメージを受けて溜めよう！', 'warn');
+        return 0;
+      }
+      const dmg = stacks * 12;
+      e.hp -= dmg;
+      p.passives._rageStacks = 0;
+      spawnPopup(e.x, e.y, `💢${dmg}`, '#e84040');
+      log(`怒りの爆発！ スタック${stacks}×12=${dmg}の大ダメージ！`, 'warn');
+      return dmg;
     }
-    const dmg = stacks * 12;
-    e.hp -= dmg;
-    p.passives._rageStacks = 0;
-    spawnPopup(e.x, e.y, `💢${dmg}`, '#e84040');
-    log(`怒りの爆発！ スタック${stacks}×12=${dmg}の大ダメージ！`, 'warn');
-    return dmg;
-  }
-},
+  },
   ultimate_slash: {
     id: 'ultimate_slash', name: '究極切り', icon: '👑', mpCost: 9,
     availableFor: ['warrior'],
@@ -589,206 +605,206 @@ shield_bash: {
       return dmg;
     }
   },
-// ─── 魔剣士 ───
-dark_slash: {
-  id: 'dark_slash', name: '闇斬り', icon: '🌑', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP5消費、ATK×1.8の闇ダメージ',
-  execute: (p, e) => {
-    if (p.hp <= 5) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 5;
-    const dmg = Math.max(2, Math.floor(p.atk * 1.8 + Math.floor(Math.random() * 4) - Math.floor(e.def / 2)));
-    e.hp -= dmg;
-    spawnPopup(e.x, e.y, `🌑${dmg}`, '#8844ff');
-    spawnPopup(G.px, G.py, `-5HP`, '#e84040');
-    log(`闇斬り！ HP5消費、${e.name}に${dmg}ダメージ！`, 'combat');
-    return dmg;
-  }
-},
-soul_devour: {
-  id: 'soul_devour', name: '魂喰い', icon: '💜', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP8消費、ATK×2.5ダメージ、与ダメの50%HP回収',
-  execute: (p, e) => {
-    if (p.hp <= 8) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 8;
-    const dmg = Math.max(3, Math.floor(p.atk * 2.5 + Math.floor(Math.random() * 5) - Math.floor(e.def / 2)));
-    e.hp -= dmg;
-    const heal = Math.min(Math.floor(dmg * 0.5), p.maxHp - p.hp);
-    p.hp += heal;
-    spawnPopup(e.x, e.y, `💜${dmg}`, '#cc44ff');
-    spawnPopup(G.px, G.py, `+${heal}HP`, '#3ecc6f');
-    log(`魂喰い！ HP8消費、${e.name}に${dmg}ダメージ、HP+${heal}回収！`, 'combat');
-    return dmg;
-  }
-},
-dark_wave: {
-  id: 'dark_wave', name: '暗黒波動', icon: '🌊', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP10消費、ATK×3のDEF無視ダメージ',
-  execute: (p, e) => {
-    if (p.hp <= 10) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 10;
-    const dmg = Math.max(4, Math.floor(p.atk * 3 + Math.floor(Math.random() * 6)));
-    e.hp -= dmg;
-    spawnPopup(e.x, e.y, `🌊${dmg}`, '#4400cc');
-    spawnPopup(G.px, G.py, `-10HP`, '#e84040');
-    log(`暗黒波動！ HP10消費、${e.name}にDEF無視${dmg}の大ダメージ！`, 'combat');
-    return dmg;
-  }
-},
-curse_slash: {
-  id: 'curse_slash', name: '呪縛斬り', icon: '⛓', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP6消費、ATK×1.5＋敵を3ターン呪い（ATK-3、DEF-2）',
-  execute: (p, e) => {
-    if (p.hp <= 6) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 6;
-    const dmg = Math.max(2, Math.floor(p.atk * 1.5 + Math.floor(Math.random() * 4) - e.def));
-    e.hp -= dmg;
-    e.atk = Math.max(1, e.atk - 3);
-    e.def = Math.max(0, e.def - 2);
-    e._curseTurns = 3;
-    e._curseAtkReduce = 3;
-    e._curseDefReduce = 2;
-    spawnPopup(e.x, e.y, `⛓${dmg}`, '#8844ff');
-    spawnPopup(e.x, e.y - 1, `呪縛！`, '#cc44ff');
-    log(`呪縛斬り！ HP6消費、${e.name}に${dmg}ダメージ＋3ターン呪い（ATK-3・DEF-2）！`, 'combat');
-    return dmg;
-  }
-},
-death_sentence: {
-  id: 'death_sentence', name: '死の宣告', icon: '💀', mpCost: 4,
-  availableFor: ['warrior'],
-  desc: 'HP4+MP4消費、3ターン後に蓄積ダメージ×2を与える',
-  execute: (p, e) => {
-    if (p.hp <= 4) { log('HPが足りない！', 'warn'); return 0; }
-    if (p.mp < 4) { log('MPが足りない！', 'warn'); return 0; }
-    p.hp -= 4;
-    p.mp -= 4;
-    e._pendingTimeSlash = 3;
-    e._timeSlashAtk = p.atk * 2;
-    spawnPopup(e.x, e.y, `💀宣告！`, '#cc0044');
-    spawnPopup(G.px, G.py, `-4HP-4MP`, '#e84040');
-    log(`死の宣告！ HP4+MP4消費、3ターン後に${e.name}に大ダメージが炸裂する！`, 'warn');
-    return 0;
-  }
-},
-soul_release: {
-  id: 'soul_release', name: '魂の解放', icon: '👁', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP15消費（HP30%以下で使用可）、ATK×5の超大ダメージ',
-  execute: (p, e) => {
-    if (p.hp / p.maxHp > 0.3) { log('HPが30%以下のときのみ使用可能！', 'warn'); return 0; }
-    if (p.hp <= 15) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 15;
-    const dmg = Math.max(10, Math.floor(p.atk * 5 + Math.floor(Math.random() * 10)));
-    e.hp -= dmg;
-    spawnPopup(e.x, e.y, `👁${dmg}`, '#ff00ff');
-    spawnPopup(G.px, G.py, `-15HP`, '#e84040');
-    log(`魂の解放！！ HP15消費、${e.name}に${dmg}の超大ダメージ！！`, 'warn');
-    return dmg;
-  }
-},
-dark_bind: {
-  id: 'dark_bind', name: '闇縛り', icon: '🕸', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP4消費、敵を3ターン行動不能',
-  execute: (p, e) => {
-    if (p.hp <= 4) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 4;
-    e._stunTurns = 3;
-    spawnPopup(e.x, e.y, `🕸縛り！`, '#8844ff');
-    spawnPopup(G.px, G.py, `-4HP`, '#e84040');
-    log(`闇縛り！ HP4消費、${e.name}を3ターン行動不能に！`, 'warn');
-    return 0;
-  }
-},
-fear_mark: {
-  id: 'fear_mark', name: '恐怖の刻印', icon: '😱', mpCost: 4,
-  availableFor: ['warrior'],
-  desc: 'HP4+MP4消費、敵のATKを3ターン間-50%',
-  execute: (p, e) => {
-    if (p.hp <= 4) { log('HPが足りない！', 'warn'); return 0; }
-    if (p.mp < 4) { log('MPが足りない！', 'warn'); return 0; }
-    p.hp -= 4;
-    p.mp -= 4;
-    e._fearTurns = 3;
-    e._fearAtkOrig = e.atk;
-    e.atk = Math.max(1, Math.floor(e.atk * 0.5));
-    spawnPopup(e.x, e.y, `😱恐怖！`, '#8844ff');
-    spawnPopup(G.px, G.py, `-4HP-4MP`, '#e84040');
-    log(`恐怖の刻印！ HP4+MP4消費、${e.name}のATKを3ターン-50%！`, 'warn');
-    return 0;
-  }
-},
-dark_curse: {
-  id: 'dark_curse', name: '暗黒呪縛', icon: '🌀', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP6消費、毎ターン敵HP-8を3ターン継続',
-  execute: (p, e) => {
-    if (p.hp <= 6) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 6;
-    e._darkCurseTurns = 3;
-    e._darkCurseDmg = 8;
-    spawnPopup(e.x, e.y, `🌀暗黒呪縛！`, '#4400cc');
-    spawnPopup(G.px, G.py, `-6HP`, '#e84040');
-    log(`暗黒呪縛！ HP6消費、${e.name}に毎ターン-8を3ターン付与！`, 'warn');
-    return 0;
-  }
-},
-turbulence: {
-  id: 'turbulence', name: '乱気流', icon: '🌪', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP15消費、ATK×0.7で3〜6回攻撃',
-  execute: (p, e) => {
-    if (p.hp <= 15) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 15;
-    const hits = 3 + Math.floor(Math.random() * 4);
-    let total = 0;
-    for (let i = 0; i < hits; i++) {
-      const dmg = Math.max(1, Math.floor(p.atk * 0.7 + Math.floor(Math.random() * 3) - e.def));
-      total += dmg;
+  // ─── 魔剣士 ───
+  dark_slash: {
+    id: 'dark_slash', name: '闇斬り', icon: '🌑', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP5消費、ATK×1.8の闇ダメージ',
+    execute: (p, e) => {
+      if (p.hp <= 5) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 5;
+      const dmg = Math.max(2, Math.floor(p.atk * 1.8 + Math.floor(Math.random() * 4) - Math.floor(e.def / 2)));
       e.hp -= dmg;
-      if (e.hp <= 0) break;
-    }
-    spawnPopup(e.x, e.y, `🌪${total}`, '#8844ff');
-    spawnPopup(G.px, G.py, `-15HP`, '#e84040');
-    log(`乱気流${hits}連撃！ HP15消費、合計${total}ダメージ！`, 'combat');
-    return total;
-  }
-},
-kill_strike: {
-  id: 'kill_strike', name: 'キル', icon: '💥', mpCost: 0,
-  availableFor: ['warrior'],
-  desc: 'HP10消費、通常50%/エリート25%で即死（ボス無効）、外れたら5〜20ダメージ',
-  execute: (p, e) => {
-    if (p.hp <= 10) { log('HPが足りない！', 'warn'); return 0; }
-    p.hp -= 10;
-    spawnPopup(G.px, G.py, `-10HP`, '#e84040');
-    if (e.kind === 'boss') {
-      const dmg = 5 + Math.floor(Math.random() * 16);
-      e.hp -= dmg;
-      spawnPopup(e.x, e.y, `💥${dmg}`, '#ff4444');
-      log(`キル！ ボスには効かない…${dmg}ダメージ！`, 'warn');
+      spawnPopup(e.x, e.y, `🌑${dmg}`, '#8844ff');
+      spawnPopup(G.px, G.py, `-5HP`, '#e84040');
+      log(`闇斬り！ HP5消費、${e.name}に${dmg}ダメージ！`, 'combat');
       return dmg;
     }
-    const rate = e.kind === 'elite' ? 0.25 : 0.5;
-    if (Math.random() < rate) {
-      const killDmg = e.hp;
-      e.hp = 0;
-      spawnPopup(e.x, e.y, `💥即死！`, '#ff00ff');
-      log(`キル！！ ${e.name}を即死させた！！`, 'warn');
-      return killDmg;
-    } else {
-      const dmg = 5 + Math.floor(Math.random() * 16);
+  },
+  soul_devour: {
+    id: 'soul_devour', name: '魂喰い', icon: '💜', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP8消費、ATK×2.5ダメージ、与ダメの50%HP回収',
+    execute: (p, e) => {
+      if (p.hp <= 8) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 8;
+      const dmg = Math.max(3, Math.floor(p.atk * 2.5 + Math.floor(Math.random() * 5) - Math.floor(e.def / 2)));
       e.hp -= dmg;
-      spawnPopup(e.x, e.y, `💥${dmg}`, '#ff4444');
-      log(`キル…外れた！${dmg}ダメージ！`, 'warn');
+      const heal = Math.min(Math.floor(dmg * 0.5), p.maxHp - p.hp);
+      p.hp += heal;
+      spawnPopup(e.x, e.y, `💜${dmg}`, '#cc44ff');
+      spawnPopup(G.px, G.py, `+${heal}HP`, '#3ecc6f');
+      log(`魂喰い！ HP8消費、${e.name}に${dmg}ダメージ、HP+${heal}回収！`, 'combat');
       return dmg;
     }
-  }
-},
+  },
+  dark_wave: {
+    id: 'dark_wave', name: '暗黒波動', icon: '🌊', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP10消費、ATK×3のDEF無視ダメージ',
+    execute: (p, e) => {
+      if (p.hp <= 10) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 10;
+      const dmg = Math.max(4, Math.floor(p.atk * 3 + Math.floor(Math.random() * 6)));
+      e.hp -= dmg;
+      spawnPopup(e.x, e.y, `🌊${dmg}`, '#4400cc');
+      spawnPopup(G.px, G.py, `-10HP`, '#e84040');
+      log(`暗黒波動！ HP10消費、${e.name}にDEF無視${dmg}の大ダメージ！`, 'combat');
+      return dmg;
+    }
+  },
+  curse_slash: {
+    id: 'curse_slash', name: '呪縛斬り', icon: '⛓', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP6消費、ATK×1.5＋敵を3ターン呪い（ATK-3、DEF-2）',
+    execute: (p, e) => {
+      if (p.hp <= 6) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 6;
+      const dmg = Math.max(2, Math.floor(p.atk * 1.5 + Math.floor(Math.random() * 4) - e.def));
+      e.hp -= dmg;
+      e.atk = Math.max(1, e.atk - 3);
+      e.def = Math.max(0, e.def - 2);
+      e._curseTurns = 3;
+      e._curseAtkReduce = 3;
+      e._curseDefReduce = 2;
+      spawnPopup(e.x, e.y, `⛓${dmg}`, '#8844ff');
+      spawnPopup(e.x, e.y - 1, `呪縛！`, '#cc44ff');
+      log(`呪縛斬り！ HP6消費、${e.name}に${dmg}ダメージ＋3ターン呪い（ATK-3・DEF-2）！`, 'combat');
+      return dmg;
+    }
+  },
+  death_sentence: {
+    id: 'death_sentence', name: '死の宣告', icon: '💀', mpCost: 4,
+    availableFor: ['warrior'],
+    desc: 'HP4+MP4消費、3ターン後に蓄積ダメージ×2を与える',
+    execute: (p, e) => {
+      if (p.hp <= 4) { log('HPが足りない！', 'warn'); return 0; }
+      if (p.mp < 4) { log('MPが足りない！', 'warn'); return 0; }
+      p.hp -= 4;
+      p.mp -= 4;
+      e._pendingTimeSlash = 3;
+      e._timeSlashAtk = p.atk * 2;
+      spawnPopup(e.x, e.y, `💀宣告！`, '#cc0044');
+      spawnPopup(G.px, G.py, `-4HP-4MP`, '#e84040');
+      log(`死の宣告！ HP4+MP4消費、3ターン後に${e.name}に大ダメージが炸裂する！`, 'warn');
+      return 0;
+    }
+  },
+  soul_release: {
+    id: 'soul_release', name: '魂の解放', icon: '👁', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP15消費（HP30%以下で使用可）、ATK×5の超大ダメージ',
+    execute: (p, e) => {
+      if (p.hp / p.maxHp > 0.3) { log('HPが30%以下のときのみ使用可能！', 'warn'); return 0; }
+      if (p.hp <= 15) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 15;
+      const dmg = Math.max(10, Math.floor(p.atk * 5 + Math.floor(Math.random() * 10)));
+      e.hp -= dmg;
+      spawnPopup(e.x, e.y, `👁${dmg}`, '#ff00ff');
+      spawnPopup(G.px, G.py, `-15HP`, '#e84040');
+      log(`魂の解放！！ HP15消費、${e.name}に${dmg}の超大ダメージ！！`, 'warn');
+      return dmg;
+    }
+  },
+  dark_bind: {
+    id: 'dark_bind', name: '闇縛り', icon: '🕸', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP4消費、敵を3ターン行動不能',
+    execute: (p, e) => {
+      if (p.hp <= 4) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 4;
+      e._stunTurns = 3;
+      spawnPopup(e.x, e.y, `🕸縛り！`, '#8844ff');
+      spawnPopup(G.px, G.py, `-4HP`, '#e84040');
+      log(`闇縛り！ HP4消費、${e.name}を3ターン行動不能に！`, 'warn');
+      return 0;
+    }
+  },
+  fear_mark: {
+    id: 'fear_mark', name: '恐怖の刻印', icon: '😱', mpCost: 4,
+    availableFor: ['warrior'],
+    desc: 'HP4+MP4消費、敵のATKを3ターン間-50%',
+    execute: (p, e) => {
+      if (p.hp <= 4) { log('HPが足りない！', 'warn'); return 0; }
+      if (p.mp < 4) { log('MPが足りない！', 'warn'); return 0; }
+      p.hp -= 4;
+      p.mp -= 4;
+      e._fearTurns = 3;
+      e._fearAtkOrig = e.atk;
+      e.atk = Math.max(1, Math.floor(e.atk * 0.5));
+      spawnPopup(e.x, e.y, `😱恐怖！`, '#8844ff');
+      spawnPopup(G.px, G.py, `-4HP-4MP`, '#e84040');
+      log(`恐怖の刻印！ HP4+MP4消費、${e.name}のATKを3ターン-50%！`, 'warn');
+      return 0;
+    }
+  },
+  dark_curse: {
+    id: 'dark_curse', name: '暗黒呪縛', icon: '🌀', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP6消費、毎ターン敵HP-8を3ターン継続',
+    execute: (p, e) => {
+      if (p.hp <= 6) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 6;
+      e._darkCurseTurns = 3;
+      e._darkCurseDmg = 8;
+      spawnPopup(e.x, e.y, `🌀暗黒呪縛！`, '#4400cc');
+      spawnPopup(G.px, G.py, `-6HP`, '#e84040');
+      log(`暗黒呪縛！ HP6消費、${e.name}に毎ターン-8を3ターン付与！`, 'warn');
+      return 0;
+    }
+  },
+  turbulence: {
+    id: 'turbulence', name: '乱気流', icon: '🌪', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP15消費、ATK×0.7で3〜6回攻撃',
+    execute: (p, e) => {
+      if (p.hp <= 15) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 15;
+      const hits = 3 + Math.floor(Math.random() * 4);
+      let total = 0;
+      for (let i = 0; i < hits; i++) {
+        const dmg = Math.max(1, Math.floor(p.atk * 0.7 + Math.floor(Math.random() * 3) - e.def));
+        total += dmg;
+        e.hp -= dmg;
+        if (e.hp <= 0) break;
+      }
+      spawnPopup(e.x, e.y, `🌪${total}`, '#8844ff');
+      spawnPopup(G.px, G.py, `-15HP`, '#e84040');
+      log(`乱気流${hits}連撃！ HP15消費、合計${total}ダメージ！`, 'combat');
+      return total;
+    }
+  },
+  kill_strike: {
+    id: 'kill_strike', name: 'キル', icon: '💥', mpCost: 0,
+    availableFor: ['warrior'],
+    desc: 'HP10消費、通常50%/エリート25%で即死（ボス無効）、外れたら5〜20ダメージ',
+    execute: (p, e) => {
+      if (p.hp <= 10) { log('HPが足りない！', 'warn'); return 0; }
+      p.hp -= 10;
+      spawnPopup(G.px, G.py, `-10HP`, '#e84040');
+      if (e.kind === 'boss') {
+        const dmg = 5 + Math.floor(Math.random() * 16);
+        e.hp -= dmg;
+        spawnPopup(e.x, e.y, `💥${dmg}`, '#ff4444');
+        log(`キル！ ボスには効かない…${dmg}ダメージ！`, 'warn');
+        return dmg;
+      }
+      const rate = e.kind === 'elite' ? 0.25 : 0.5;
+      if (Math.random() < rate) {
+        const killDmg = e.hp;
+        e.hp = 0;
+        spawnPopup(e.x, e.y, `💥即死！`, '#ff00ff');
+        log(`キル！！ ${e.name}を即死させた！！`, 'warn');
+        return killDmg;
+      } else {
+        const dmg = 5 + Math.floor(Math.random() * 16);
+        e.hp -= dmg;
+        spawnPopup(e.x, e.y, `💥${dmg}`, '#ff4444');
+        log(`キル…外れた！${dmg}ダメージ！`, 'warn');
+        return dmg;
+      }
+    }
+  },
 
 
 };
@@ -797,23 +813,23 @@ kill_strike: {
 //  SKILL POOL
 // ══════════════════════════════════════════════════════════
 const ALL_SKILLS = [
- {
-    id: 'hp_up', name: '鉄の意志', icon: '❤️', type: 'boost', stackable: true,maxStack: 5,
+  {
+    id: 'hp_up', name: '鉄の意志', icon: '❤️', type: 'boost', stackable: true, maxStack: 5,
     desc: '最大HPを+10、現在HPも+10',
     apply: p => { p.maxHp += 10; p.hp = Math.min(p.hp + 10, p.maxHp); }
   },
   {
-    id: 'atk_up', name: '剛力', icon: '💪', type: 'boost', stackable: true,maxStack: 5,
+    id: 'atk_up', name: '剛力', icon: '💪', type: 'boost', stackable: true, maxStack: 5,
     desc: 'ATKを+4',
     apply: p => { p.atk += 4; }
   },
   {
-    id: 'def_up', name: '堅牢', icon: '🛡', type: 'boost', stackable: true,maxStack: 5,
+    id: 'def_up', name: '堅牢', icon: '🛡', type: 'boost', stackable: true, maxStack: 5,
     desc: 'DEFを+3',
     apply: p => { p.def += 3; }
   },
   {
-    id: 'mp_up', name: '魔力の器', icon: '💧', type: 'boost', stackable: true,maxStack: 5,
+    id: 'mp_up', name: '魔力の器', icon: '💧', type: 'boost', stackable: true, maxStack: 5,
     desc: '最大MPを+8、現在MPも+8',
     apply: p => { p.maxMp += 8; p.mp = Math.min(p.mp + 8, p.maxMp); }
   },
@@ -830,7 +846,7 @@ const ALL_SKILLS = [
 
   {
     id: 'regen', name: '自然回復', icon: '🌿', type: 'passive',
-    desc: '移動ごとにHP+1（最大まで）',
+    desc: '移動ごとにHP+1（100歩まで）',
     apply: p => { p.passives.regen = (p.passives.regen || 0) + 1; }
   },
   {
@@ -912,30 +928,30 @@ const ALL_SKILLS = [
     apply: p => { p.passives.manaShield = true; }
   },
   {
-  id: 'first_strike', name: '先手必勝', icon: '⚡', type: 'passive',
-  desc: '戦闘開始時に必ず先制',
-  apply: p => { p.passives.firstStrike = 1.0; }
-},
-{
-  id: 'exp_up', name: '経験値UP', icon: '📈', type: 'passive',
-  desc: '獲得EXP+20%',
-  apply: p => { p.passives.expBoost = (p.passives.expBoost || 1) + 0.2; }
-},
-{
-  id: 'item_boost', name: '節約術', icon: '🎒', type: 'passive',
-  desc: 'アイテム使用時の効果+20%',
-  apply: p => { p.passives.itemBoost = (p.passives.itemBoost || 1) + 0.2; }
-},
-{
-  id: 'hawk_eye', name: '鷹の目', icon: '🦅', type: 'passive',
-  desc: '会心率+10%',
-  apply: p => { p.passives.critRate = (p.passives.critRate || 0) + 0.1; }
-},
-{
-  id: 'treasure_hunter', name: '財宝探知', icon: '🗺', type: 'passive',
-  desc: '宝箱の出現率+20%',
-  apply: p => { p.passives.treasureBoost = (p.passives.treasureBoost || 0) + 0.2; }
-},
+    id: 'first_strike', name: '先手必勝', icon: '⚡', type: 'passive',
+    desc: '戦闘開始時に必ず先制',
+    apply: p => { p.passives.firstStrike = 1.0; }
+  },
+  {
+    id: 'exp_up', name: '経験値UP', icon: '📈', type: 'passive',
+    desc: '獲得EXP+20%',
+    apply: p => { p.passives.expBoost = (p.passives.expBoost || 1) + 0.2; }
+  },
+  {
+    id: 'item_boost', name: '節約術', icon: '🎒', type: 'passive',
+    desc: 'アイテム使用時の効果+20%',
+    apply: p => { p.passives.itemBoost = (p.passives.itemBoost || 1) + 0.2; }
+  },
+  {
+    id: 'hawk_eye', name: '鷹の目', icon: '🦅', type: 'passive',
+    desc: '会心率+10%',
+    apply: p => { p.passives.critRate = (p.passives.critRate || 0) + 0.1; }
+  },
+  {
+    id: 'treasure_hunter', name: '財宝探知', icon: '🗺', type: 'passive',
+    desc: '宝箱の出現率+20%',
+    apply: p => { p.passives.treasureBoost = (p.passives.treasureBoost || 0) + 0.2; }
+  },
 
 ];
 
@@ -1039,7 +1055,7 @@ const DARK_WARRIOR_LEVELUP_SKILLS = [
     apply: p => { p.passives.painFeed = (p.passives.painFeed || 0) + 0.5; }
   },
   {
-    id: 'dw_lv_dark_regen', name: '闇の再生', icon: '🌿', type: 'passive',
+    id: 'dw_lv_dark_regen', name: '闇の再生(50歩まで)', icon: '🌿', type: 'passive',
     onlyClass: 'warrior',
     desc: '移動ごとにHP+3回復',
     apply: p => { p.passives.regen = (p.passives.regen || 0) + 3; }
@@ -1115,24 +1131,24 @@ function generateShopStock(floor) {
   // 商売屋限定スキルプール（HP循環・魔力循環を含む）
   const SHOP_EXCLUSIVE_SKILLS = [
     {
-  id: 'iron_wall_up', name: '鉄壁強化', icon: '🛡', type: 'passive',
-  desc: '鉄壁の発動ターン+2',
-  apply: p => { p.passives.ironWallBonus = (p.passives.ironWallBonus || 0) + 2; }
-},
-{
-  id: 'fortress_body', name: '不屈の肉体', icon: '💪', type: 'boost',
-  desc: '最大HP+20、DEF+3',
-  apply: p => { p.maxHp += 20; p.hp = Math.min(p.hp + 20, p.maxHp); p.def += 3; }
-},
-{
-  id: 'counter_will', name: '反撃の意志', icon: '⚔', type: 'passive',
-  desc: '鉄壁反撃時にATK×0.3の追加ダメージ',
-  apply: p => { p.passives.counterWill = (p.passives.counterWill || 0) + 0.3; }
-},
+      id: 'iron_wall_up', name: '鉄壁強化', icon: '🛡', type: 'passive',
+      desc: '鉄壁の発動ターン+2',
+      apply: p => { p.passives.ironWallBonus = (p.passives.ironWallBonus || 0) + 2; }
+    },
+    {
+      id: 'fortress_body', name: '不屈の肉体', icon: '💪', type: 'boost',
+      desc: '最大HP+20、DEF+3',
+      apply: p => { p.maxHp += 20; p.hp = Math.min(p.hp + 20, p.maxHp); p.def += 3; }
+    },
+    {
+      id: 'counter_will', name: '反撃の意志', icon: '⚔', type: 'passive',
+      desc: '鉄壁反撃時にATK×0.3の追加ダメージ',
+      apply: p => { p.passives.counterWill = (p.passives.counterWill || 0) + 0.3; }
+    },
 
     {
       id: 'regen', name: '自然回復', icon: '🌿', type: 'passive',
-      desc: '移動ごとにHP+1（最大まで）',
+      desc: '移動ごとにHP+1（100歩まで）',
       apply: p => { p.passives.regen = (p.passives.regen || 0) + 1; }
     },
     {
@@ -1214,14 +1230,16 @@ function buyShopItem(idx) {
 
   if (item.kind === 'weapon') {
     p.equip.wpn = item.name;
-    const baseAtk = G.playerClass.atk + (p.lv - 1) * 1;
-    p.atk = baseAtk + item.atkBonus;
+    const oldBonus = p.equip.wpnBonus || 0;
+    p.equip.wpnBonus = item.atkBonus;
+    p.atk = p.atk - oldBonus + item.atkBonus;
     updateEquipDisplay();
     log(`${item.name}を購入！ ATK+${item.atkBonus}`, 'loot');
   } else if (item.kind === 'armor') {
     p.equip.arm = item.name;
-    const baseDef = G.playerClass.def + Math.floor((p.lv - 1) / 2);
-    p.def = baseDef + item.defBonus;
+    const oldBonus = p.equip.armBonus || 0;
+    p.equip.armBonus = item.defBonus;
+    p.def = p.def - oldBonus + item.defBonus;
     updateEquipDisplay();
     log(`${item.name}を購入！ DEF+${item.defBonus}`, 'loot');
   } else if (item.kind === 'skill') {
@@ -1244,17 +1262,43 @@ function buyShopItem(idx) {
 //  ENEMY TYPES
 // ══════════════════════════════════════════════════════════
 const ENEMY_TYPES = [
-  { name: 'スライム', hp: 6, atk: 2, def: 0, exp: 3, gold: 5, color: '#3ecc6f' },
-  { name: 'コウモリ', hp: 4, atk: 3, def: 0, exp: 3, gold: 10, color: '#888888' },
-  { name: 'スケルトン', hp: 10, atk: 4, def: 1, exp: 6, gold: 5, color: '#dddddd' },
-  { name: 'オーク', hp: 15, atk: 5, def: 2, exp: 8, gold: 12, color: '#8fbc5a' },
-  { name: 'ゴブリン', hp: 8, atk: 4, def: 1, exp: 5, gold: 5, color: '#ff9900' },
-  { name: 'ゾンビ', hp: 18, atk: 6, def: 1, exp: 10, gold: 10, color: '#66cc88' },
-  { name: 'デーモン', hp: 25, atk: 8, def: 3, exp: 15, gold: 20, color: '#cc0066' },
-  { name: 'エンジェル', hp: 28, atk: 9, def: 3, exp: 18, gold: 22, color: '#ffffaa' },
-  { name: 'リザードマン', hp: 32, atk: 10, def: 4, exp: 25, gold: 20, color: '#44bb44' },
-  { name: 'ドラゴン', hp: 35, atk: 10, def: 4, exp: 30, gold: 22, color: '#ff4400' },
+  { name: 'スライム', hp: 15, atk: 4, def: 2, exp: 3, gold: 5, color: '#3ecc6f' },
+  { name: 'コウモリ', hp: 13, atk: 5, def: 0, exp: 3, gold: 10, color: '#888888' },
+  { name: 'スケルトン', hp: 9, atk: 9, def: 0, exp: 6, gold: 5, color: '#dddddd' },
+  { name: 'オーク', hp: 23, atk: 8, def: 4, exp: 8, gold: 12, color: '#8fbc5a' },
+  { name: 'ゴブリン', hp: 14, atk: 7, def: 2, exp: 5, gold: 5, color: '#ff9900' },
+  { name: 'ゾンビ', hp: 27, atk: 8, def: 2, exp: 10, gold: 10, color: '#66cc88' },
+  { name: 'デーモン', hp: 35, atk: 12, def: 4, exp: 15, gold: 20, color: '#cc0066' },
+  { name: 'エンジェル', hp: 42, atk: 10, def: 5, exp: 18, gold: 22, color: '#ffffaa' },
+  { name: 'リザードマン', hp: 37, atk: 15, def: 4, exp: 25, gold: 20, color: '#44bb44' },
+  { name: 'ドラゴン', hp: 45, atk: 13, def: 7, exp: 30, gold: 22, color: '#ff4400' },
 ];
+// 敵の行動パターン定義
+const ENEMY_PATTERNS = {
+  'スライム': { actions: ['atk', 'atk', 'buff'], phase2: null },
+  'コウモリ': { actions: ['atk', 'atk', 'poison'], phase2: null },
+  'スケルトン': { actions: ['atk', 'atk', 'defend'], phase2: null },
+  'オーク': { actions: ['atk', 'slam', 'defend'], phase2: 'slam' },
+  'ゴブリン': { actions: ['atk', 'poison', 'atk'], phase2: null },
+  'ゾンビ': { actions: ['atk', 'atk', 'regen'], phase2: 'atk' },
+  'デーモン': { actions: ['atk', 'slam', 'burn'], phase2: 'burn' },
+  'エンジェル': { actions: ['atk', 'buff', 'heal'], phase2: 'heal' },
+  'リザードマン': { actions: ['atk', 'slam', 'poison'], phase2: 'slam' },
+  'ドラゴン': { actions: ['slam', 'burn', 'atk'], phase2: 'burn' },
+};
+
+const INTENT_INFO = {
+  atk: { icon: '⚔', label: '攻撃してくる', cls: 'intent-atk' },
+  slam: { icon: '💥', label: '強撃を放つ', cls: 'intent-atk' },
+  burn: { icon: '🔥', label: '炎攻撃をしてくる', cls: 'intent-atk' },
+  poison: { icon: '🐍', label: '毒を使ってくる', cls: 'intent-atk' },
+  buff: { icon: '💪', label: '自己強化する', cls: 'intent-buff' },
+  defend: { icon: '🛡', label: '防御態勢をとる', cls: 'intent-buff' },
+  heal: { icon: '💚', label: '回復する', cls: 'intent-heal' },
+  regen: { icon: '🌿', label: '再生する', cls: 'intent-heal' },
+  drain: { icon: '💜', label: 'MPを吸収する', cls: 'intent-buff' },
+};
+
 
 const ELITE_TYPES = [
   { name: '死神騎士', hp: 35, atk: 10, def: 4, exp: 20, gold: 80, color: '#cc44ff', special: 'drain' },
@@ -1275,27 +1319,74 @@ const BOSS_TYPES = [
   { name: '魔王 ダルクロア', hp: 200, atk: 22, def: 10, exp: 150, gold: 10000000, color: '#ff2266', special: 'buff', phase2Atk: 30 },
 ];
 const HARD_BOSS_TYPES = [
-  { 
-    name: '岩王 グラニウス', hp: 90, atk: 13, def: 8, exp: 60, gold: 200, 
-    color: '#888866', special: 'slam', phase2Atk: 17 
+  {
+    name: '岩王 グラニウス', hp: 90, atk: 13, def: 8, exp: 60, gold: 200,
+    color: '#888866', special: 'slam', phase2Atk: 17
   },
-  { 
-    name: '炎獣 イグナール', hp: 110, atk: 16, def: 6, exp: 80, gold: 250, 
-    color: '#ff6600', special: 'burn', phase2Atk: 20 
+  {
+    name: '炎獣 イグナール', hp: 110, atk: 16, def: 6, exp: 80, gold: 250,
+    color: '#ff6600', special: 'burn', phase2Atk: 20
   },
-  { 
-    name: '雷皇 ザンヴォルト', hp: 140, atk: 18, def: 7, exp: 110, gold: 320, 
-    color: '#ffff44', special: 'multi', phase2Atk: 18 
+  {
+    name: '雷皇 ザンヴォルト', hp: 140, atk: 18, def: 7, exp: 110, gold: 320,
+    color: '#ffff44', special: 'multi', phase2Atk: 18
   },
-  { 
-    name: '深淵神 アビサル', hp: 170, atk: 20, def: 9, exp: 140, gold: 400, 
-    color: '#4422aa', special: 'abyss', phase2Atk: 26 
+  {
+    name: '深淵神 アビサル', hp: 170, atk: 20, def: 9, exp: 140, gold: 400,
+    color: '#4422aa', special: 'abyss', phase2Atk: 26
   },
-  { 
-    name: '混沌王 カオスロード', hp: 220, atk: 24, def: 11, exp: 180, gold: 10000000, 
-    color: '#ff22ff', special: 'chaos', phase2Atk: 30 
+  {
+    name: '混沌王 カオスロード', hp: 220, atk: 24, def: 11, exp: 180, gold: 10000000,
+    color: '#ff22ff', special: 'chaos', phase2Atk: 30
   },
 ];
+
+function pickEnemyIntent(actions, lastIntent = null, secondLastIntent = null) {
+  const pool = (actions && actions.length ? actions : ['atk']).filter(Boolean);
+  let candidates = pool;
+
+  if (lastIntent && secondLastIntent && lastIntent === secondLastIntent && pool.length > 1) {
+    candidates = pool.filter(action => action !== lastIntent);
+  }
+
+  return candidates[Math.floor(Math.random() * candidates.length)] || 'atk';
+}
+
+function pickBossIntent(special) {
+  const intentTable = {
+    slam: ['atk', 'slam', 'atk'],
+    burn: ['atk', 'burn', 'slam'],
+    drain: ['atk', 'drain', 'slam'],
+    buff: ['atk', 'buff', 'slam'],
+    multi: ['atk', 'multi', 'atk'],
+    abyss: ['atk', 'abyss_def', 'slam'],
+    chaos: ['atk', 'burn', 'drain', 'multi', 'buff', 'slam'],
+  };
+
+  return pickEnemyIntent(intentTable[special] || ['atk']);
+}
+
+function makeBoss(x, y, floor, bossIdx) {
+  const bossList = G.mode === 'hard' ? HARD_BOSS_TYPES : BOSS_TYPES;
+  const base = bossList[Math.min(bossIdx, bossList.length - 1)] || BOSS_TYPES[0];
+  const isHard = G.mode === 'hard';
+  const scale = isHard ? 1 + Math.max(0, floor - 5) * 0.03 : 1;
+  const hp = Math.ceil(base.hp * scale);
+
+  return {
+    ...base,
+    x, y,
+    hp,
+    maxHp: hp,
+    atk: Math.ceil(base.atk * scale),
+    def: Math.ceil(base.def * scale),
+    kind: 'boss',
+    phase2: false,
+    buffed: false,
+    firstTurn: true,
+    nextIntent: pickBossIntent(base.special),
+  };
+}
 
 // ══════════════════════════════════════════════════════════
 //  GAME STATE
@@ -1313,82 +1404,1489 @@ const COMBAT_COLS = 2; // グリッドの列数
 // ══════════════════════════════════════════════════════════
 //  ENEMY SPRITE RENDERER  (pixel art procedural)
 // ══════════════════════════════════════════════════════════
-function drawEnemySprite(enemy) {
-  const W = spriteCanvas.width;   // 96
-  const H = spriteCanvas.height;  // 96
-  sctx.clearRect(0, 0, W, H);
+// ─── スライム ───
+function drawSprite_Slime(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2;
+  const r = isBoss ? 30 : 20;
+  // 体（楕円を矩形で近似）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - r, cy - r * 0.6, r * 2, r * 1.4);
+  ctx.fillRect(cx - r * 0.8, cy - r, r * 1.6, r * 0.5);
+  ctx.fillRect(cx - r * 0.5, cy - r * 1.2, r, r * 0.3);
+  // ハイライト
+  ctx.fillStyle = color + 'aa';
+  ctx.fillRect(cx - r * 0.4, cy - r * 0.9, r * 0.5, r * 0.3);
+  // 触手
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - r - 4, cy - r * 0.2, 5, r * 0.8);
+  ctx.fillRect(cx + r - 1, cy - r * 0.2, 5, r * 0.8);
+  // 目（白）
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - r * 0.35, cy - r * 0.2, 8, 8);
+  ctx.fillRect(cx + r * 0.1, cy - r * 0.2, 8, 8);
+  // 瞳（黒）
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(cx - r * 0.35 + 2, cy - r * 0.2 + 2, 4, 4);
+  ctx.fillRect(cx + r * 0.1 + 2, cy - r * 0.2 + 2, 4, 4);
+}
 
+// ─── コウモリ ───
+function drawSprite_Bat(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.5 : 1;
+  // 翼（左）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 36 * s, cy - 10 * s, 22 * s, 14 * s);
+  ctx.fillRect(cx - 38 * s, cy - 18 * s, 14 * s, 10 * s);
+  ctx.fillRect(cx - 40 * s, cy - 26 * s, 8 * s, 10 * s);
+  // 翼（右）
+  ctx.fillRect(cx + 14 * s, cy - 10 * s, 22 * s, 14 * s);
+  ctx.fillRect(cx + 24 * s, cy - 18 * s, 14 * s, 10 * s);
+  ctx.fillRect(cx + 32 * s, cy - 26 * s, 8 * s, 10 * s);
+  // 体
+  ctx.fillRect(cx - 12 * s, cy - 8 * s, 24 * s, 22 * s);
+  // 頭
+  ctx.fillRect(cx - 10 * s, cy - 22 * s, 20 * s, 16 * s);
+  // 耳
+  ctx.fillRect(cx - 10 * s, cy - 32 * s, 6 * s, 12 * s);
+  ctx.fillRect(cx + 4 * s, cy - 32 * s, 6 * s, 12 * s);
+  // 目（赤）
+  ctx.fillStyle = '#ff4444';
+  ctx.fillRect(cx - 8 * s, cy - 18 * s, 6 * s, 5 * s);
+  ctx.fillRect(cx + 2 * s, cy - 18 * s, 6 * s, 5 * s);
+  // 牙
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 5 * s, cy - 8 * s, 4 * s, 6 * s);
+  ctx.fillRect(cx + 1 * s, cy - 8 * s, 4 * s, 6 * s);
+}
+
+// ─── スケルトン ───
+function drawSprite_Skeleton(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 4;
+  const s = isBoss ? 1.4 : 1;
+  ctx.fillStyle = '#dddddd';
+  // 頭蓋骨
+  ctx.fillRect(cx - 12 * s, cy - 34 * s, 24 * s, 20 * s);
+  ctx.fillRect(cx - 14 * s, cy - 28 * s, 28 * s, 12 * s);
+  // 顎
+  ctx.fillRect(cx - 10 * s, cy - 16 * s, 20 * s, 6 * s);
+  // 眼窩
+  ctx.fillStyle = '#000033';
+  ctx.fillRect(cx - 11 * s, cy - 31 * s, 8 * s, 9 * s);
+  ctx.fillRect(cx + 3 * s, cy - 31 * s, 8 * s, 9 * s);
+  ctx.fillStyle = '#3344ff88';
+  ctx.fillRect(cx - 9 * s, cy - 29 * s, 4 * s, 5 * s);
+  ctx.fillRect(cx + 5 * s, cy - 29 * s, 4 * s, 5 * s);
+  // 脊椎
+  ctx.fillStyle = '#cccccc';
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(cx - 3 * s, cy - 8 * s + i * 6 * s, 6 * s, 4 * s);
+  }
+  // 肋骨
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(cx - 14 * s, cy - 6 * s + i * 7 * s, 10 * s, 4 * s);
+    ctx.fillRect(cx + 4 * s, cy - 6 * s + i * 7 * s, 10 * s, 4 * s);
+  }
+  // 腕
+  ctx.fillRect(cx - 18 * s, cy - 8 * s, 6 * s, 22 * s);
+  ctx.fillRect(cx + 12 * s, cy - 8 * s, 6 * s, 22 * s);
+  // 剣
+  ctx.fillStyle = '#aaaacc';
+  ctx.fillRect(cx - 22 * s, cy + 10 * s, 4 * s, 18 * s);
+  ctx.fillStyle = '#888899';
+  ctx.fillRect(cx - 26 * s, cy + 14 * s, 12 * s, 3 * s);
+  // 脚
+  ctx.fillStyle = '#cccccc';
+  ctx.fillRect(cx - 10 * s, cy + 20 * s, 7 * s, 16 * s);
+  ctx.fillRect(cx + 3 * s, cy + 20 * s, 7 * s, 16 * s);
+}
+
+// ─── オーク ───
+function drawSprite_Orc(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 4;
+  const s = isBoss ? 1.4 : 1;
+  // 体（がっしり）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 18 * s, cy - 18 * s, 36 * s, 30 * s);
+  // 肩（広い）
+  ctx.fillRect(cx - 24 * s, cy - 16 * s, 10 * s, 18 * s);
+  ctx.fillRect(cx + 14 * s, cy - 16 * s, 10 * s, 18 * s);
+  // 頭（大きい）
+  ctx.fillRect(cx - 14 * s, cy - 36 * s, 28 * s, 20 * s);
+  // 牙
+  ctx.fillStyle = '#ffeecc';
+  ctx.fillRect(cx - 8 * s, cy - 18 * s, 5 * s, 8 * s);
+  ctx.fillRect(cx + 3 * s, cy - 18 * s, 5 * s, 8 * s);
+  // 目
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 10 * s, cy - 32 * s, 7 * s, 6 * s);
+  ctx.fillRect(cx + 3 * s, cy - 32 * s, 7 * s, 6 * s);
+  // 鼻
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 3 * s, cy - 26 * s, 6 * s, 6 * s);
+  // こぶし
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 28 * s, cy - 2 * s, 10 * s, 10 * s);
+  ctx.fillRect(cx + 18 * s, cy - 2 * s, 10 * s, 10 * s);
+  // 脚
+  ctx.fillRect(cx - 14 * s, cy + 12 * s, 11 * s, 18 * s);
+  ctx.fillRect(cx + 3 * s, cy + 12 * s, 11 * s, 18 * s);
+  // 鎧パーツ（胸当て）
+  ctx.fillStyle = '#887755';
+  ctx.fillRect(cx - 12 * s, cy - 14 * s, 24 * s, 18 * s);
+  ctx.fillStyle = '#aA9966';
+  ctx.fillRect(cx - 10 * s, cy - 12 * s, 20 * s, 4 * s);
+}
+
+// ─── ゴブリン ───
+function drawSprite_Goblin(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 8;
+  const s = isBoss ? 1.4 : 1;
+  // 体（小さく）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 10 * s, cy - 14 * s, 20 * s, 20 * s);
+  // 頭（大きめ）
+  ctx.fillRect(cx - 12 * s, cy - 32 * s, 24 * s, 20 * s);
+  // 大きな耳
+  ctx.fillRect(cx - 20 * s, cy - 28 * s, 10 * s, 8 * s);
+  ctx.fillRect(cx + 10 * s, cy - 28 * s, 10 * s, 8 * s);
+  // 目（大きい黄色）
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(cx - 9 * s, cy - 28 * s, 7 * s, 7 * s);
+  ctx.fillRect(cx + 2 * s, cy - 28 * s, 7 * s, 7 * s);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(cx - 7 * s, cy - 26 * s, 3 * s, 3 * s);
+  ctx.fillRect(cx + 4 * s, cy - 26 * s, 3 * s, 3 * s);
+  // ナイフ
+  ctx.fillStyle = '#aaaaaa';
+  ctx.fillRect(cx + 14 * s, cy - 10 * s, 3 * s, 14 * s);
+  ctx.fillStyle = '#888888';
+  ctx.fillRect(cx + 11 * s, cy - 8 * s, 9 * s, 3 * s);
+  // 脚
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 8 * s, cy + 6 * s, 7 * s, 12 * s);
+  ctx.fillRect(cx + 1 * s, cy + 6 * s, 7 * s, 12 * s);
+}
+
+// ─── ゾンビ ───
+function drawSprite_Zombie(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 4;
+  const s = isBoss ? 1.4 : 1;
+  const sway = Math.sin(Date.now() * 0.001) * 2;
+  // 体（腐敗した緑）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 14 * s + sway, cy - 16 * s, 28 * s, 26 * s);
+  // 頭
+  ctx.fillRect(cx - 12 * s + sway, cy - 34 * s, 24 * s, 20 * s);
+  // 傷口（赤）
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(cx - 5 * s + sway, cy - 28 * s, 10 * s, 3 * s);
+  ctx.fillRect(cx - 3 * s + sway, cy - 4 * s, 6 * s, 3 * s);
+  // 目（濁った白）
+  ctx.fillStyle = '#ccccaa';
+  ctx.fillRect(cx - 9 * s + sway, cy - 30 * s, 6 * s, 5 * s);
+  ctx.fillRect(cx + 3 * s + sway, cy - 30 * s, 6 * s, 5 * s);
+  ctx.fillStyle = '#446644';
+  ctx.fillRect(cx - 7 * s + sway, cy - 28 * s, 2 * s, 2 * s);
+  ctx.fillRect(cx + 5 * s + sway, cy - 28 * s, 2 * s, 2 * s);
+  // 腕（前に伸ばした）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 22 * s + sway, cy - 12 * s, 10 * s, 8 * s);
+  ctx.fillRect(cx + 12 * s + sway, cy - 16 * s, 10 * s, 8 * s);
+  // 脚
+  ctx.fillRect(cx - 11 * s + sway * 0.5, cy + 10 * s, 8 * s, 16 * s);
+  ctx.fillRect(cx + 3 * s + sway * 0.5, cy + 14 * s, 8 * s, 16 * s);
+}
+
+// ─── デーモン ───
+function drawSprite_Demon(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const pulse = Math.sin(Date.now() * 0.002) * 2;
+  // 翼
+  ctx.fillStyle = '#880022';
+  ctx.fillRect(cx - 38 * s, cy - 20 * s, 20 * s, 30 * s);
+  ctx.fillRect(cx - 32 * s, cy - 32 * s, 14 * s, 14 * s);
+  ctx.fillRect(cx + 18 * s, cy - 20 * s, 20 * s, 30 * s);
+  ctx.fillRect(cx + 18 * s, cy - 32 * s, 14 * s, 14 * s);
+  // オーラ
+  ctx.fillStyle = color + '44';
+  ctx.fillRect(cx - 20 * s, cy - 38 * s - pulse, 40 * s, 58 * s + pulse * 2);
+  // 体
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16 * s, cy - 16 * s, 32 * s, 28 * s);
+  // 頭
+  ctx.fillRect(cx - 14 * s, cy - 34 * s, 28 * s, 20 * s);
+  // 角（2本）
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 12 * s, cy - 46 * s, 5 * s, 14 * s);
+  ctx.fillRect(cx + 7 * s, cy - 46 * s, 5 * s, 14 * s);
+  ctx.fillRect(cx - 14 * s, cy - 44 * s, 3 * s, 3 * s);
+  ctx.fillRect(cx + 11 * s, cy - 44 * s, 3 * s, 3 * s);
+  // 目（燃える）
+  ctx.fillStyle = '#ff8800';
+  ctx.fillRect(cx - 10 * s, cy - 30 * s, 7 * s, 6 * s);
+  ctx.fillRect(cx + 3 * s, cy - 30 * s, 7 * s, 6 * s);
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(cx - 8 * s, cy - 28 * s, 3 * s, 2 * s);
+  ctx.fillRect(cx + 5 * s, cy - 28 * s, 3 * s, 2 * s);
+  // 尻尾
+  ctx.fillStyle = '#880022';
+  ctx.fillRect(cx + 14 * s, cy + 8 * s, 6 * s, 6 * s);
+  ctx.fillRect(cx + 18 * s, cy + 12 * s, 5 * s, 5 * s);
+  ctx.fillRect(cx + 21 * s, cy + 15 * s, 4 * s, 4 * s);
+  // 脚
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12 * s, cy + 12 * s, 10 * s, 16 * s);
+  ctx.fillRect(cx + 2 * s, cy + 12 * s, 10 * s, 16 * s);
+}
+
+// ─── エンジェル ───
+function drawSprite_Angel(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const glow = Math.sin(Date.now() * 0.0015) * 0.2 + 0.3;
+  // 後光
+  ctx.fillStyle = `rgba(255,255,200,${glow})`;
+  ctx.fillRect(cx - 24 * s, cy - 44 * s, 48 * s, 48 * s);
+  // 翼（白）
+  ctx.fillStyle = '#ffffee';
+  ctx.fillRect(cx - 38 * s, cy - 24 * s, 22 * s, 30 * s);
+  ctx.fillRect(cx - 36 * s, cy - 36 * s, 16 * s, 14 * s);
+  ctx.fillRect(cx + 16 * s, cy - 24 * s, 22 * s, 30 * s);
+  ctx.fillRect(cx + 20 * s, cy - 36 * s, 16 * s, 14 * s);
+  // 羽の模様
+  ctx.fillStyle = '#ddddcc';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(cx - 36 * s + i * 4 * s, cy - 20 * s + i * 6 * s, 18 * s, 2 * s);
+    ctx.fillRect(cx + 18 * s + i * 4 * s, cy - 20 * s + i * 6 * s, 18 * s, 2 * s);
+  }
+  // ローブ（白）
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 14 * s, cy - 16 * s, 28 * s, 30 * s);
+  ctx.fillRect(cx - 16 * s, cy + 8 * s, 32 * s, 10 * s);
+  // 頭
+  ctx.fillStyle = '#ffe8cc';
+  ctx.fillRect(cx - 12 * s, cy - 34 * s, 24 * s, 20 * s);
+  // 光輪
+  ctx.fillStyle = '#f5c842';
+  ctx.fillRect(cx - 14 * s, cy - 42 * s, 28 * s, 5 * s);
+  ctx.fillStyle = '#fff8aa';
+  ctx.fillRect(cx - 12 * s, cy - 41 * s, 24 * s, 3 * s);
+  // 目（穏やか）
+  ctx.fillStyle = '#4488ff';
+  ctx.fillRect(cx - 9 * s, cy - 29 * s, 6 * s, 5 * s);
+  ctx.fillRect(cx + 3 * s, cy - 29 * s, 6 * s, 5 * s);
+  ctx.fillStyle = '#000044';
+  ctx.fillRect(cx - 7 * s, cy - 27 * s, 2 * s, 2 * s);
+  ctx.fillRect(cx + 5 * s, cy - 27 * s, 2 * s, 2 * s);
+  // 杖（光の）
+  ctx.fillStyle = '#f5c842';
+  ctx.fillRect(cx + 18 * s, cy - 14 * s, 3 * s, 30 * s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx + 14 * s, cy - 18 * s, 11 * s, 6 * s);
+  ctx.fillRect(cx + 17 * s, cy - 22 * s, 5 * s, 10 * s);
+}
+
+// ─── リザードマン ───
+function drawSprite_Lizard(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2 + 4;
+  const s = isBoss ? 1.4 : 1;
+  // 尻尾
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 14 * s, cy + 6 * s, 8 * s, 8 * s);
+  ctx.fillRect(cx + 20 * s, cy + 10 * s, 7 * s, 6 * s);
+  ctx.fillRect(cx + 25 * s, cy + 14 * s, 6 * s, 4 * s);
+  // 体（鱗模様）
+  ctx.fillRect(cx - 16 * s, cy - 16 * s, 32 * s, 28 * s);
+  ctx.fillStyle = color + 'bb';
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 4; j++) {
+      ctx.fillRect(cx - 12 * s + j * 8 * s, cy - 12 * s + i * 8 * s, 6 * s, 6 * s);
+    }
+  }
+  // 頭（トカゲ）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12 * s, cy - 34 * s, 24 * s, 20 * s);
+  ctx.fillRect(cx - 14 * s, cy - 28 * s, 28 * s, 6 * s); // 口元
+  // トサカ
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 4 * s, cy - 46 * s, 4 * s, 14 * s);
+  ctx.fillRect(cx, cy - 44 * s, 4 * s, 12 * s);
+  ctx.fillRect(cx + 4 * s, cy - 42 * s, 4 * s, 10 * s);
+  // 目（縦スリット）
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(cx - 9 * s, cy - 30 * s, 6 * s, 8 * s);
+  ctx.fillRect(cx + 3 * s, cy - 30 * s, 6 * s, 8 * s);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(cx - 7 * s, cy - 29 * s, 2 * s, 6 * s);
+  ctx.fillRect(cx + 5 * s, cy - 29 * s, 2 * s, 6 * s);
+  // 槍
+  ctx.fillStyle = '#aaaaaa';
+  ctx.fillRect(cx - 24 * s, cy - 28 * s, 3 * s, 40 * s);
+  ctx.fillStyle = '#ccccff';
+  ctx.fillRect(cx - 26 * s, cy - 38 * s, 7 * s, 12 * s);
+  // 脚
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12 * s, cy + 12 * s, 9 * s, 18 * s);
+  ctx.fillRect(cx + 3 * s, cy + 12 * s, 9 * s, 18 * s);
+}
+
+// ─── ドラゴン ───
+function drawSprite_Dragon(ctx, W, H, color, isBoss) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const breathe = Math.sin(Date.now() * 0.001) * 2;
+  // 尻尾
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 20 * s, cy, 10 * s, 10 * s);
+  ctx.fillRect(cx + 28 * s, cy + 6 * s, 8 * s, 8 * s);
+  ctx.fillRect(cx + 34 * s, cy + 12 * s, 6 * s, 6 * s);
+  ctx.fillRect(cx + 38 * s, cy + 16 * s, 4 * s, 4 * s);
+  // 翼
+  ctx.fillStyle = '#cc2200';
+  ctx.fillRect(cx - 38 * s, cy - 28 * s, 24 * s, 36 * s);
+  ctx.fillRect(cx - 36 * s, cy - 40 * s, 18 * s, 14 * s);
+  ctx.fillRect(cx + 14 * s, cy - 28 * s, 24 * s, 36 * s);
+  ctx.fillRect(cx + 18 * s, cy - 40 * s, 18 * s, 14 * s);
+  // 翼の骨格線
+  ctx.fillStyle = '#882200';
+  ctx.fillRect(cx - 38 * s, cy - 30 * s, 2 * s, 34 * s);
+  ctx.fillRect(cx + 36 * s, cy - 30 * s, 2 * s, 34 * s);
+  // 体
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 20 * s, cy - 16 * s + breathe, 40 * s, 28 * s);
+  // 腹（明るい）
+  ctx.fillStyle = '#ff8844';
+  ctx.fillRect(cx - 12 * s, cy - 10 * s + breathe, 24 * s, 18 * s);
+  // 首
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 10 * s, cy - 34 * s, 20 * s, 20 * s);
+  // 頭
+  ctx.fillRect(cx - 14 * s, cy - 46 * s, 28 * s, 14 * s);
+  ctx.fillRect(cx - 18 * s, cy - 40 * s, 36 * s, 8 * s); // 口
+  // 角
+  ctx.fillStyle = '#885500';
+  ctx.fillRect(cx - 10 * s, cy - 56 * s, 4 * s, 12 * s);
+  ctx.fillRect(cx + 6 * s, cy - 56 * s, 4 * s, 12 * s);
+  // 目（炎色）
+  ctx.fillStyle = '#ff8800';
+  ctx.fillRect(cx - 11 * s, cy - 44 * s, 7 * s, 6 * s);
+  ctx.fillRect(cx + 4 * s, cy - 44 * s, 7 * s, 6 * s);
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(cx - 9 * s, cy - 42 * s, 3 * s, 2 * s);
+  ctx.fillRect(cx + 6 * s, cy - 42 * s, 3 * s, 2 * s);
+  // 炎ブレス（ボスのみ）
+  if (isBoss) {
+    ctx.fillStyle = '#ff440044';
+    ctx.fillRect(cx - 22 * s, cy - 40 * s, 6 * s, 8 * s);
+    ctx.fillStyle = '#ff880066';
+    ctx.fillRect(cx - 26 * s, cy - 38 * s, 6 * s, 6 * s);
+  }
+  // 脚
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16 * s, cy + 12 * s, 12 * s, 16 * s);
+  ctx.fillRect(cx + 4 * s, cy + 12 * s, 12 * s, 16 * s);
+  // 爪
+  ctx.fillStyle = '#885500';
+  ctx.fillRect(cx - 18 * s, cy + 26 * s, 5 * s, 6 * s);
+  ctx.fillRect(cx - 13 * s, cy + 27 * s, 5 * s, 5 * s);
+  ctx.fillRect(cx + 4 * s, cy + 26 * s, 5 * s, 6 * s);
+  ctx.fillRect(cx + 13 * s, cy + 27 * s, 5 * s, 5 * s);
+}
+
+// ══════════════════════════════════════════════════════════
+//  ELITE SPRITE DRAWERS
+// ══════════════════════════════════════════════════════════
+
+// ─── 死神騎士 ───
+function drawSprite_DeathKnight(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const pulse = Math.sin(Date.now() * 0.002) * 2;
+  // 死のオーラ
+  ctx.fillStyle = color + '22';
+  ctx.fillRect(cx - 20*s, cy - 40*s - pulse, 40*s, 60*s + pulse*2);
+  // マント
+  ctx.fillStyle = '#1a0030';
+  ctx.fillRect(cx - 18*s, cy - 20*s, 36*s, 42*s);
+  ctx.fillRect(cx - 14*s, cy + 18*s, 8*s,  10*s);
+  ctx.fillRect(cx + 6*s,  cy + 18*s, 8*s,  10*s);
+  // 鎧（体）
+  ctx.fillStyle = '#2a1a44';
+  ctx.fillRect(cx - 14*s, cy - 16*s, 28*s, 26*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12*s, cy - 14*s, 4*s,  20*s);
+  ctx.fillRect(cx - 12*s, cy - 14*s, 24*s, 4*s);
+  // 兜
+  ctx.fillStyle = '#2a1a44';
+  ctx.fillRect(cx - 12*s, cy - 34*s, 24*s, 20*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 14*s, cy - 40*s, 5*s, 8*s);
+  ctx.fillRect(cx + 9*s,  cy - 40*s, 5*s, 8*s);
+  // バイザー
+  ctx.fillStyle = '#0a0018';
+  ctx.fillRect(cx - 9*s, cy - 30*s, 18*s, 8*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 7*s, cy - 28*s, 5*s, 4*s);
+  ctx.fillRect(cx + 2*s, cy - 28*s, 5*s, 4*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 6*s, cy - 27*s, 2*s, 2*s);
+  ctx.fillRect(cx + 3*s, cy - 27*s, 2*s, 2*s);
+  // 大鎌
+  ctx.fillStyle = '#555577';
+  ctx.fillRect(cx - 22*s, cy - 32*s, 3*s, 50*s);
+  ctx.fillStyle = '#aaaacc';
+  ctx.fillRect(cx - 32*s, cy - 38*s, 14*s, 6*s);
+  ctx.fillRect(cx - 30*s, cy - 32*s, 10*s, 4*s);
+  ctx.fillStyle = color + 'aa';
+  ctx.fillRect(cx - 34*s, cy - 40*s, 4*s, 8*s);
+  // 脚
+  ctx.fillStyle = '#2a1a44';
+  ctx.fillRect(cx - 10*s, cy + 10*s, 8*s, 16*s);
+  ctx.fillRect(cx + 2*s,  cy + 10*s, 8*s, 16*s);
+}
+
+// ─── 溶岩巨人 ───
+function drawSprite_LavaGiant(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 4;
+  const s = isBoss ? 1.4 : 1;
+  const glow = Math.sin(Date.now() * 0.003) * 0.15 + 0.25;
+  // 溶岩オーラ
+  ctx.fillStyle = `rgba(255,100,0,${glow})`;
+  ctx.fillRect(cx - 22*s, cy - 24*s, 44*s, 54*s);
+  // 体（岩）
+  ctx.fillStyle = '#3a1a00';
+  ctx.fillRect(cx - 20*s, cy - 20*s, 40*s, 36*s);
+  // 溶岩の亀裂
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 4*s,  cy - 18*s, 3*s, 30*s);
+  ctx.fillRect(cx + 8*s,  cy - 10*s, 3*s, 20*s);
+  ctx.fillRect(cx - 14*s, cy - 4*s,  24*s, 3*s);
+  ctx.fillStyle = '#ff9900';
+  ctx.fillRect(cx - 3*s,  cy - 17*s, 1*s, 28*s);
+  // 頭
+  ctx.fillStyle = '#3a1a00';
+  ctx.fillRect(cx - 16*s, cy - 38*s, 32*s, 20*s);
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 2*s,  cy - 36*s, 2*s,  16*s);
+  // 目
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 11*s, cy - 34*s, 8*s, 7*s);
+  ctx.fillRect(cx + 3*s,  cy - 34*s, 8*s, 7*s);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(cx - 9*s,  cy - 32*s, 4*s, 3*s);
+  ctx.fillRect(cx + 5*s,  cy - 32*s, 4*s, 3*s);
+  // 腕
+  ctx.fillStyle = '#3a1a00';
+  ctx.fillRect(cx - 32*s, cy - 18*s, 14*s, 20*s);
+  ctx.fillRect(cx + 18*s, cy - 18*s, 14*s, 20*s);
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 34*s, cy - 4*s,  16*s, 12*s);
+  ctx.fillRect(cx + 18*s, cy - 4*s,  16*s, 12*s);
+  // 脚
+  ctx.fillStyle = '#3a1a00';
+  ctx.fillRect(cx - 14*s, cy + 16*s, 11*s, 16*s);
+  ctx.fillRect(cx + 3*s,  cy + 16*s, 11*s, 16*s);
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 6*s,  cy + 12*s, 3*s,  6*s);
+  ctx.fillRect(cx + 3*s,  cy + 10*s, 3*s,  8*s);
+}
+
+// ─── 影の暗殺者 ───
+function drawSprite_ShadowAssassin(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const flicker = Math.sin(Date.now() * 0.005) * 1.5;
+  // 影の残像
+  ctx.fillStyle = color + '18';
+  ctx.fillRect(cx - 14*s + flicker, cy - 32*s, 28*s, 48*s);
+  ctx.fillStyle = color + '10';
+  ctx.fillRect(cx - 12*s - flicker, cy - 28*s, 24*s, 44*s);
+  // マント
+  ctx.fillStyle = '#0a0a12';
+  ctx.fillRect(cx - 16*s, cy - 24*s, 32*s, 44*s);
+  ctx.fillRect(cx - 18*s, cy - 16*s, 4*s,  28*s);
+  ctx.fillRect(cx + 14*s, cy - 16*s, 4*s,  28*s);
+  // 体
+  ctx.fillStyle = '#111122';
+  ctx.fillRect(cx - 10*s, cy - 16*s, 20*s, 24*s);
+  // 頭巾
+  ctx.fillStyle = '#0a0a18';
+  ctx.fillRect(cx - 10*s, cy - 34*s, 20*s, 20*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 7*s, cy - 28*s, 5*s, 3*s);
+  ctx.fillRect(cx + 2*s, cy - 28*s, 5*s, 3*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 6*s, cy - 28*s, 2*s, 2*s);
+  ctx.fillRect(cx + 3*s, cy - 28*s, 2*s, 2*s);
+  // 短剣×2
+  ctx.fillStyle = '#ccccee';
+  ctx.fillRect(cx - 20*s, cy - 12*s, 2*s, 16*s);
+  ctx.fillRect(cx - 22*s, cy - 12*s, 6*s,  3*s);
+  ctx.fillRect(cx + 18*s, cy - 8*s,  2*s, 14*s);
+  ctx.fillRect(cx + 16*s, cy - 4*s,  6*s,  3*s);
+  ctx.fillStyle = color + 'cc';
+  ctx.fillRect(cx - 20*s, cy - 12*s, 1*s, 16*s);
+  ctx.fillRect(cx + 19*s, cy - 8*s,  1*s, 14*s);
+  // 脚
+  ctx.fillStyle = '#111122';
+  ctx.fillRect(cx - 8*s, cy + 8*s, 6*s, 16*s);
+  ctx.fillRect(cx + 2*s, cy + 8*s,  6*s, 16*s);
+}
+
+// ─── 魔将軍 ───
+function drawSprite_MagicGeneral(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const pulse = Math.sin(Date.now() * 0.002) * 3;
+  // オーラ
+  ctx.fillStyle = color + '22';
+  ctx.fillRect(cx - 24*s, cy - 42*s - pulse, 48*s, 64*s + pulse*2);
+  // 体（鎧）
+  ctx.fillStyle = '#1a0022';
+  ctx.fillRect(cx - 18*s, cy - 18*s, 36*s, 28*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16*s, cy - 16*s, 4*s,  22*s);
+  ctx.fillRect(cx + 12*s, cy - 16*s, 4*s,  22*s);
+  ctx.fillRect(cx - 16*s, cy - 16*s, 32*s, 4*s);
+  // 胸紋章
+  ctx.fillStyle = '#ffddff';
+  ctx.fillRect(cx - 4*s, cy - 12*s, 8*s, 8*s);
+  ctx.fillStyle = '#0a0014';
+  ctx.fillRect(cx - 2*s, cy - 10*s, 4*s, 4*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 1*s, cy - 9*s,  2*s, 2*s);
+  // 兜
+  ctx.fillStyle = '#1a0022';
+  ctx.fillRect(cx - 14*s, cy - 36*s, 28*s, 20*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 2*s, cy - 50*s, 4*s, 16*s);
+  ctx.fillRect(cx - 6*s, cy - 46*s, 3*s, 12*s);
+  ctx.fillRect(cx + 3*s, cy - 46*s, 3*s, 12*s);
+  ctx.fillStyle = '#ffddff';
+  ctx.fillRect(cx - 14*s, cy - 36*s, 28*s, 3*s);
+  ctx.fillRect(cx - 14*s, cy - 18*s, 28*s, 3*s);
+  // 目
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 10*s, cy - 31*s, 7*s, 5*s);
+  ctx.fillRect(cx + 3*s,  cy - 31*s, 7*s, 5*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 8*s,  cy - 30*s, 3*s, 2*s);
+  ctx.fillRect(cx + 5*s,  cy - 30*s, 3*s, 2*s);
+  // 魔法杖（右）
+  ctx.fillStyle = '#884499';
+  ctx.fillRect(cx + 18*s, cy - 28*s, 4*s, 42*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 14*s, cy - 36*s, 12*s, 12*s);
+  ctx.fillStyle = '#0a0014';
+  ctx.fillRect(cx + 16*s, cy - 34*s, 8*s,  8*s);
+  ctx.fillStyle = '#ffddff';
+  ctx.fillRect(cx + 18*s, cy - 32*s, 4*s,  4*s);
+  // 盾（左）
+  ctx.fillStyle = '#2a0044';
+  ctx.fillRect(cx - 28*s, cy - 20*s, 12*s, 18*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 26*s, cy - 18*s, 8*s, 3*s);
+  ctx.fillRect(cx - 26*s, cy - 18*s, 3*s, 14*s);
+  // 脚
+  ctx.fillStyle = '#1a0022';
+  ctx.fillRect(cx - 12*s, cy + 10*s, 10*s, 18*s);
+  ctx.fillRect(cx + 2*s,  cy + 10*s, 10*s, 18*s);
+}
+
+// ─── 氷刃の狩人 ───
+function drawSprite_IceHunter(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const shimmer = Math.sin(Date.now() * 0.003) * 2;
+  // 氷オーラ
+  ctx.fillStyle = '#88ccff18';
+  ctx.fillRect(cx - 20*s, cy - 38*s + shimmer, 40*s, 58*s);
+  // 体
+  ctx.fillStyle = '#0a2244';
+  ctx.fillRect(cx - 14*s, cy - 16*s, 28*s, 26*s);
+  ctx.fillStyle = '#88ccff44';
+  ctx.fillRect(cx - 4*s,  cy - 14*s, 3*s, 20*s);
+  ctx.fillRect(cx - 12*s, cy - 6*s,  24*s, 3*s);
+  // 頭
+  ctx.fillStyle = '#0a2244';
+  ctx.fillRect(cx - 12*s, cy - 34*s, 24*s, 20*s);
+  ctx.fillStyle = '#06143a';
+  ctx.fillRect(cx - 14*s, cy - 36*s, 28*s, 8*s);
+  ctx.fillRect(cx - 16*s, cy - 28*s, 4*s,  8*s);
+  ctx.fillRect(cx + 12*s, cy - 28*s, 4*s,  8*s);
+  // 目
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 9*s, cy - 29*s, 6*s, 5*s);
+  ctx.fillRect(cx + 3*s, cy - 29*s, 6*s, 5*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 7*s, cy - 27*s, 2*s, 2*s);
+  ctx.fillRect(cx + 5*s, cy - 27*s, 2*s, 2*s);
+  // 氷弓
+  ctx.fillStyle = '#aaddff';
+  ctx.fillRect(cx + 18*s, cy - 28*s, 3*s, 40*s);
+  ctx.fillRect(cx + 18*s, cy - 28*s, 10*s, 3*s);
+  ctx.fillRect(cx + 18*s, cy + 12*s, 10*s, 3*s);
+  ctx.fillStyle = '#cceeff88';
+  ctx.fillRect(cx + 27*s, cy - 26*s, 2*s, 36*s);
+  ctx.fillStyle = '#88ccff';
+  ctx.fillRect(cx + 14*s, cy - 8*s,  16*s, 2*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx + 28*s, cy - 10*s, 4*s,  6*s);
+  // 氷短剣（左）
+  ctx.fillStyle = '#aaddff';
+  ctx.fillRect(cx - 22*s, cy - 10*s, 3*s, 14*s);
+  ctx.fillRect(cx - 24*s, cy - 7*s,  7*s,  3*s);
+  // 脚
+  ctx.fillStyle = '#0a2244';
+  ctx.fillRect(cx - 10*s, cy + 10*s, 8*s, 16*s);
+  ctx.fillRect(cx + 2*s,  cy + 10*s, 8*s, 16*s);
+}
+
+// ─── 雷光の剣士 ───
+function drawSprite_ThunderSwordsman(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const bolt = Math.sin(Date.now() * 0.008) > 0.5;
+  // 雷オーラ（点滅）
+  if (bolt) {
+    ctx.fillStyle = color + '33';
+    ctx.fillRect(cx - 22*s, cy - 40*s, 44*s, 60*s);
+  }
+  // 体（黄鎧）
+  ctx.fillStyle = '#2a2200';
+  ctx.fillRect(cx - 14*s, cy - 16*s, 28*s, 26*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12*s, cy - 14*s, 4*s,  22*s);
+  ctx.fillRect(cx + 8*s,  cy - 14*s, 4*s,  22*s);
+  ctx.fillRect(cx - 12*s, cy - 14*s, 24*s, 4*s);
+  // 兜
+  ctx.fillStyle = '#2a2200';
+  ctx.fillRect(cx - 12*s, cy - 34*s, 24*s, 20*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12*s, cy - 34*s, 24*s, 4*s);
+  ctx.fillRect(cx - 2*s,  cy - 42*s, 4*s,  10*s);
+  ctx.fillRect(cx - 8*s,  cy - 38*s, 3*s,   6*s);
+  ctx.fillRect(cx + 5*s,  cy - 38*s, 3*s,   6*s);
+  // 目
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 8*s, cy - 29*s, 6*s, 5*s);
+  ctx.fillRect(cx + 2*s, cy - 29*s, 6*s, 5*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 6*s, cy - 28*s, 3*s, 3*s);
+  ctx.fillRect(cx + 3*s, cy - 28*s, 3*s, 3*s);
+  // 雷剣（左）
+  ctx.fillStyle = '#aaaa44';
+  ctx.fillRect(cx - 24*s, cy - 32*s, 4*s, 46*s);
+  ctx.fillRect(cx - 28*s, cy - 32*s, 12*s, 4*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 23*s, cy - 32*s, 2*s, 46*s);
+  // 雷エフェクト（点滅）
+  if (bolt) {
+    ctx.fillStyle = '#ffffaa';
+    ctx.fillRect(cx - 26*s, cy - 20*s, 3*s, 8*s);
+    ctx.fillRect(cx - 24*s, cy - 12*s, 3*s, 8*s);
+    ctx.fillRect(cx - 22*s, cy - 4*s,  3*s, 8*s);
+  }
+  // 脚
+  ctx.fillStyle = '#2a2200';
+  ctx.fillRect(cx - 10*s, cy + 10*s, 8*s, 16*s);
+  ctx.fillRect(cx + 2*s,  cy + 10*s, 8*s, 16*s);
+}
+
+// ─── 闇の司祭 ───
+function drawSprite_DarkPriest(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const pulse = Math.sin(Date.now() * 0.0015) * 2;
+  // 紫オーラ
+  ctx.fillStyle = color + '20';
+  ctx.fillRect(cx - 20*s, cy - 44*s - pulse, 40*s, 64*s + pulse*2);
+  // ローブ
+  ctx.fillStyle = '#180028';
+  ctx.fillRect(cx - 16*s, cy - 20*s, 32*s, 38*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16*s, cy - 20*s, 4*s, 36*s);
+  ctx.fillRect(cx + 12*s, cy - 20*s, 4*s, 36*s);
+  ctx.fillRect(cx - 2*s,  cy - 20*s, 4*s, 36*s);
+  // フード
+  ctx.fillStyle = '#180028';
+  ctx.fillRect(cx - 14*s, cy - 38*s, 28*s, 20*s);
+  ctx.fillRect(cx - 16*s, cy - 34*s, 4*s,  14*s);
+  ctx.fillRect(cx + 12*s, cy - 34*s, 4*s,  14*s);
+  // 顔（影）
+  ctx.fillStyle = '#0a0014';
+  ctx.fillRect(cx - 10*s, cy - 34*s, 20*s, 14*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 7*s, cy - 30*s, 5*s, 4*s);
+  ctx.fillRect(cx + 2*s, cy - 30*s, 5*s, 4*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 5*s, cy - 29*s, 1*s, 2*s);
+  ctx.fillRect(cx + 4*s, cy - 29*s, 1*s, 2*s);
+  // 杖（右）
+  ctx.fillStyle = '#4a1a66';
+  ctx.fillRect(cx + 16*s, cy - 36*s, 4*s, 54*s);
+  ctx.fillStyle = '#ccaadd';
+  ctx.fillRect(cx + 12*s, cy - 44*s, 12*s, 10*s);
+  ctx.fillStyle = '#0a0014';
+  ctx.fillRect(cx + 14*s, cy - 42*s, 4*s, 4*s);
+  ctx.fillRect(cx + 13*s, cy - 38*s, 6*s, 3*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 14*s, cy - 40*s, 4*s, 4*s);
+  // 魔法書（左）
+  ctx.fillStyle = '#2a0044';
+  ctx.fillRect(cx - 24*s, cy - 18*s, 14*s, 18*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 22*s, cy - 16*s, 10*s, 2*s);
+  ctx.fillRect(cx - 22*s, cy - 10*s, 10*s, 2*s);
+  ctx.fillRect(cx - 22*s, cy - 4*s,  10*s, 2*s);
+  // 脚
+  ctx.fillStyle = '#180028';
+  ctx.fillRect(cx - 10*s, cy + 18*s, 8*s, 14*s);
+  ctx.fillRect(cx + 2*s,  cy + 18*s, 8*s, 14*s);
+}
+
+// ─── 無属の釈迦 ───
+function drawSprite_AbyssMonk(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const breathe = Math.sin(Date.now() * 0.001) * 3;
+  // 炎オーラ（強）
+  ctx.fillStyle = '#ff884422';
+  ctx.fillRect(cx - 24*s, cy - 44*s - breathe, 48*s, 66*s + breathe*2);
+  ctx.fillStyle = '#ff440011';
+  ctx.fillRect(cx - 28*s, cy - 48*s - breathe, 56*s, 74*s + breathe*2);
+  // 袈裟（体）
+  ctx.fillStyle = '#2a1400';
+  ctx.fillRect(cx - 16*s, cy - 18*s, 32*s, 32*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 14*s, cy - 18*s, 28*s, 4*s);
+  ctx.fillRect(cx - 14*s, cy + 10*s, 28*s, 4*s);
+  // 炎の模様
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 2*s, cy - 14*s, 4*s, 24*s);
+  ctx.fillStyle = '#ffaa00';
+  ctx.fillRect(cx - 1*s, cy - 13*s, 2*s, 22*s);
+  // 頭（禿げた老人）
+  ctx.fillStyle = '#cc9966';
+  ctx.fillRect(cx - 10*s, cy - 36*s, 20*s, 20*s);
+  // 眉（険しい）
+  ctx.fillStyle = '#663300';
+  ctx.fillRect(cx - 8*s, cy - 32*s, 6*s,  3*s);
+  ctx.fillRect(cx + 2*s, cy - 32*s, 6*s,  3*s);
+  // 目（閉じて瞑想）
+  ctx.fillStyle = '#332200';
+  ctx.fillRect(cx - 7*s, cy - 28*s, 5*s, 2*s);
+  ctx.fillRect(cx + 2*s, cy - 28*s, 5*s, 2*s);
+  // 口（静かに笑む）
+  ctx.fillRect(cx - 3*s, cy - 22*s, 6*s, 2*s);
+  // 炎の掌（左右）
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 26*s, cy - 10*s, 12*s, 10*s);
+  ctx.fillRect(cx + 14*s, cy - 10*s, 12*s, 10*s);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(cx - 24*s, cy - 8*s,  4*s,  6*s);
+  ctx.fillRect(cx - 20*s, cy - 8*s,  4*s,  6*s);
+  ctx.fillRect(cx + 16*s, cy - 8*s,  4*s,  6*s);
+  ctx.fillRect(cx + 20*s, cy - 8*s,  4*s,  6*s);
+  // 炎の柱（下）
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 8*s,  cy + 14*s, 6*s,  8*s + breathe);
+  ctx.fillRect(cx + 2*s,  cy + 14*s, 6*s,  8*s + breathe);
+  ctx.fillStyle = '#ff9900';
+  ctx.fillRect(cx - 6*s,  cy + 14*s, 2*s,  6*s + breathe);
+  ctx.fillRect(cx + 4*s,  cy + 14*s, 2*s,  6*s + breathe);
+  // 脚
+  ctx.fillStyle = '#2a1400';
+  ctx.fillRect(cx - 10*s, cy + 14*s, 8*s, 14*s);
+  ctx.fillRect(cx + 2*s,  cy + 14*s, 8*s, 14*s);
+}
+
+// ══════════════════════════════════════════════════════════
+//  BOSS SPRITE DRAWERS（ノーマルモード）
+// ══════════════════════════════════════════════════════════
+
+// ─── 地下王 ゴーレム ───
+function drawSprite_Golem(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const shake = isBoss ? Math.sin(Date.now() * 0.004) * 1.5 : 0;
+  // 石のオーラ
+  ctx.fillStyle = color + '18';
+  ctx.fillRect(cx - 26*s, cy - 40*s, 52*s, 66*s);
+  // 体（巨大な岩）
+  ctx.fillStyle = '#5a5a6a';
+  ctx.fillRect(cx - 22*s + shake, cy - 20*s, 44*s, 38*s);
+  // 体の石板模様
+  ctx.fillStyle = '#3a3a4a';
+  ctx.fillRect(cx - 20*s, cy - 18*s, 16*s, 14*s);
+  ctx.fillRect(cx + 4*s,  cy - 18*s, 16*s, 14*s);
+  ctx.fillRect(cx - 20*s, cy - 2*s,  40*s, 14*s);
+  ctx.fillStyle = '#7a7a8a';
+  ctx.fillRect(cx - 18*s, cy - 16*s, 6*s,  6*s);
+  ctx.fillRect(cx + 12*s, cy - 16*s, 6*s,  6*s);
+  // 頭（四角い岩）
+  ctx.fillStyle = '#5a5a6a';
+  ctx.fillRect(cx - 18*s, cy - 42*s, 36*s, 24*s);
+  // 目（赤く光る）
+  ctx.fillStyle = '#cc2200';
+  ctx.fillRect(cx - 13*s, cy - 38*s, 10*s, 8*s);
+  ctx.fillRect(cx + 3*s,  cy - 38*s, 10*s, 8*s);
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 11*s, cy - 36*s, 6*s,  4*s);
+  ctx.fillRect(cx + 5*s,  cy - 36*s, 6*s,  4*s);
+  ctx.fillStyle = '#ffaa44';
+  ctx.fillRect(cx - 10*s, cy - 35*s, 2*s,  2*s);
+  ctx.fillRect(cx + 6*s,  cy - 35*s, 2*s,  2*s);
+  // 口（岩の割れ目）
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(cx - 8*s, cy - 26*s, 16*s, 4*s);
+  ctx.fillStyle = '#cc2200';
+  ctx.fillRect(cx - 6*s, cy - 25*s, 3*s,  2*s);
+  ctx.fillRect(cx + 3*s, cy - 25*s, 3*s,  2*s);
+  // 腕（巨大）
+  ctx.fillStyle = '#5a5a6a';
+  ctx.fillRect(cx - 40*s + shake, cy - 16*s, 20*s, 22*s);
+  ctx.fillRect(cx + 20*s - shake, cy - 16*s, 20*s, 22*s);
+  // 拳
+  ctx.fillStyle = '#3a3a4a';
+  ctx.fillRect(cx - 42*s, cy - 2*s, 22*s, 14*s);
+  ctx.fillRect(cx + 20*s, cy - 2*s, 22*s, 14*s);
+  // 脚
+  ctx.fillStyle = '#5a5a6a';
+  ctx.fillRect(cx - 16*s, cy + 18*s, 14*s, 18*s);
+  ctx.fillRect(cx + 2*s,  cy + 18*s, 14*s, 18*s);
+  // 王冠（岩）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 14*s, cy - 44*s, 28*s, 4*s);
+  ctx.fillRect(cx - 10*s, cy - 50*s, 4*s,  8*s);
+  ctx.fillRect(cx - 2*s,  cy - 52*s, 4*s,  10*s);
+  ctx.fillRect(cx + 6*s,  cy - 50*s, 4*s,  8*s);
+}
+
+// ─── 炎王 イフリート ───
+function drawSprite_Ifrit(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const flame = Math.sin(Date.now() * 0.004) * 3;
+  // 炎のオーラ（強烈）
+  ctx.fillStyle = '#ff440033';
+  ctx.fillRect(cx - 30*s, cy - 50*s, 60*s, 80*s);
+  ctx.fillStyle = '#ff880022';
+  ctx.fillRect(cx - 24*s, cy - 44*s - flame, 48*s, 68*s + flame*2);
+  // 体（炎の悪魔）
+  ctx.fillStyle = '#8a1a00';
+  ctx.fillRect(cx - 18*s, cy - 20*s, 36*s, 32*s);
+  // 溶岩の筋
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 2*s,  cy - 18*s, 4*s,  26*s);
+  ctx.fillRect(cx - 14*s, cy - 4*s,  28*s, 4*s);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(cx - 1*s,  cy - 17*s, 2*s,  24*s);
+  // 翼（炎）
+  ctx.fillStyle = '#cc2200';
+  ctx.fillRect(cx - 40*s, cy - 30*s + flame, 20*s, 36*s);
+  ctx.fillRect(cx - 38*s, cy - 44*s + flame, 14*s, 16*s);
+  ctx.fillRect(cx + 20*s, cy - 30*s + flame, 20*s, 36*s);
+  ctx.fillRect(cx + 24*s, cy - 44*s + flame, 14*s, 16*s);
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 36*s, cy - 28*s, 12*s, 28*s);
+  ctx.fillRect(cx + 24*s, cy - 28*s, 12*s, 28*s);
+  // 頭
+  ctx.fillStyle = '#8a1a00';
+  ctx.fillRect(cx - 16*s, cy - 40*s, 32*s, 22*s);
+  // 角（炎）
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 14*s, cy - 56*s + flame, 5*s, 18*s);
+  ctx.fillRect(cx + 9*s,  cy - 56*s + flame, 5*s, 18*s);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(cx - 13*s, cy - 54*s + flame, 3*s, 14*s);
+  ctx.fillRect(cx + 10*s, cy - 54*s + flame, 3*s, 14*s);
+  // 目（白熱）
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 11*s, cy - 36*s, 8*s, 7*s);
+  ctx.fillRect(cx + 3*s,  cy - 36*s, 8*s, 7*s);
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(cx - 9*s,  cy - 34*s, 4*s, 3*s);
+  ctx.fillRect(cx + 5*s,  cy - 34*s, 4*s, 3*s);
+  // 口（炎を吐く）
+  ctx.fillStyle = '#1a0000';
+  ctx.fillRect(cx - 8*s, cy - 26*s, 16*s, 6*s);
+  ctx.fillStyle = '#ff6600';
+  ctx.fillRect(cx - 20*s, cy - 26*s, 14*s, 6*s);
+  ctx.fillRect(cx - 26*s, cy - 24*s, 8*s,  4*s);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(cx - 22*s, cy - 25*s, 4*s,  4*s);
+  // 脚
+  ctx.fillStyle = '#8a1a00';
+  ctx.fillRect(cx - 14*s, cy + 12*s, 12*s, 18*s);
+  ctx.fillRect(cx + 2*s,  cy + 12*s, 12*s, 18*s);
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 16*s, cy + 28*s, 14*s, 4*s);
+  ctx.fillRect(cx + 2*s,  cy + 28*s, 14*s, 4*s);
+}
+
+// ─── 深淵龍 ヴォルグ ───
+function drawSprite_Volg(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const breathe = Math.sin(Date.now() * 0.002) * 3;
+  // 深淵のオーラ
+  ctx.fillStyle = color + '28';
+  ctx.fillRect(cx - 32*s, cy - 50*s, 64*s, 84*s);
+  ctx.fillStyle = '#8800aa18';
+  ctx.fillRect(cx - 28*s, cy - 46*s - breathe, 56*s, 78*s + breathe*2);
+  // 尻尾
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 22*s, cy - 4*s,  12*s, 10*s);
+  ctx.fillRect(cx + 32*s, cy + 4*s,  10*s, 8*s);
+  ctx.fillRect(cx + 40*s, cy + 10*s, 8*s,  6*s);
+  ctx.fillRect(cx + 46*s, cy + 14*s, 5*s,  5*s);
+  // 翼
+  ctx.fillStyle = '#440066';
+  ctx.fillRect(cx - 42*s, cy - 32*s, 24*s, 42*s);
+  ctx.fillRect(cx - 40*s, cy - 48*s, 18*s, 18*s);
+  ctx.fillRect(cx + 18*s, cy - 32*s, 24*s, 42*s);
+  ctx.fillRect(cx + 22*s, cy - 48*s, 18*s, 18*s);
+  ctx.fillStyle = color + 'aa';
+  ctx.fillRect(cx - 42*s, cy - 34*s, 2*s, 40*s);
+  ctx.fillRect(cx + 40*s, cy - 34*s, 2*s, 40*s);
+  // 体
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 20*s, cy - 18*s + breathe, 40*s, 30*s);
+  ctx.fillStyle = '#cc88ff';
+  ctx.fillRect(cx - 12*s, cy - 12*s + breathe, 24*s, 20*s);
+  // 首
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12*s, cy - 36*s, 24*s, 20*s);
+  // 頭
+  ctx.fillRect(cx - 16*s, cy - 52*s, 32*s, 18*s);
+  ctx.fillRect(cx - 20*s, cy - 46*s, 40*s, 10*s);
+  // 角
+  ctx.fillStyle = '#8800cc';
+  ctx.fillRect(cx - 12*s, cy - 62*s, 5*s, 14*s);
+  ctx.fillRect(cx + 7*s,  cy - 62*s, 5*s, 14*s);
+  ctx.fillRect(cx - 18*s, cy - 58*s, 4*s, 10*s);
+  ctx.fillRect(cx + 14*s, cy - 58*s, 4*s, 10*s);
+  // 目
+  ctx.fillStyle = '#ff44ff';
+  ctx.fillRect(cx - 14*s, cy - 48*s, 9*s, 7*s);
+  ctx.fillRect(cx + 5*s,  cy - 48*s, 9*s, 7*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 12*s, cy - 46*s, 3*s, 3*s);
+  ctx.fillRect(cx + 7*s,  cy - 46*s, 3*s, 3*s);
+  // ブレス（深淵の光）
+  ctx.fillStyle = color + '88';
+  ctx.fillRect(cx - 24*s, cy - 46*s, 6*s, 8*s);
+  ctx.fillStyle = '#cc44ff';
+  ctx.fillRect(cx - 28*s, cy - 44*s, 6*s, 6*s);
+  ctx.fillStyle = '#ffffff44';
+  ctx.fillRect(cx - 30*s, cy - 42*s, 4*s, 4*s);
+  // 脚
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16*s, cy + 12*s, 12*s, 18*s);
+  ctx.fillRect(cx + 4*s,  cy + 12*s, 12*s, 18*s);
+}
+
+// ─── 魔王 ダルクロア ───
+function drawSprite_Darkroa(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const pulse = Math.sin(Date.now() * 0.003) * 4;
+  const rot   = Math.sin(Date.now() * 0.001) * 2;
+  // 最強のオーラ（多重）
+  ctx.fillStyle = color + '33';
+  ctx.fillRect(cx - 36*s, cy - 56*s, 72*s, 90*s);
+  ctx.fillStyle = '#ff000022';
+  ctx.fillRect(cx - 30*s, cy - 50*s - pulse, 60*s, 82*s + pulse*2);
+  ctx.fillStyle = '#8800ff18';
+  ctx.fillRect(cx - 24*s, cy - 44*s + pulse, 48*s, 74*s - pulse);
+  // マント（漆黒）
+  ctx.fillStyle = '#0a0010';
+  ctx.fillRect(cx - 28*s, cy - 28*s, 56*s, 56*s);
+  ctx.fillRect(cx - 22*s, cy + 24*s, 10*s, 14*s);
+  ctx.fillRect(cx + 12*s, cy + 24*s, 10*s, 14*s);
+  // 体（魔王鎧）
+  ctx.fillStyle = '#1a0028';
+  ctx.fillRect(cx - 18*s, cy - 20*s, 36*s, 30*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16*s, cy - 18*s, 5*s,  26*s);
+  ctx.fillRect(cx + 11*s, cy - 18*s, 5*s,  26*s);
+  ctx.fillRect(cx - 16*s, cy - 18*s, 32*s, 5*s);
+  // 紋章（胸）
+  ctx.fillStyle = '#ff2266';
+  ctx.fillRect(cx - 5*s, cy - 12*s, 10*s, 10*s);
+  ctx.fillStyle = '#0a0010';
+  ctx.fillRect(cx - 3*s, cy - 10*s,  6*s,  6*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 1*s, cy - 8*s,   2*s,  2*s);
+  // 頭（魔王の兜）
+  ctx.fillStyle = '#1a0028';
+  ctx.fillRect(cx - 16*s, cy - 44*s, 32*s, 26*s);
+  // 魔王の角（巨大、2対）
+  ctx.fillStyle = '#cc0044';
+  ctx.fillRect(cx - 18*s, cy - 60*s + rot, 6*s, 18*s);
+  ctx.fillRect(cx + 12*s, cy - 60*s - rot, 6*s, 18*s);
+  ctx.fillRect(cx - 22*s, cy - 54*s, 5*s, 12*s);
+  ctx.fillRect(cx + 17*s, cy - 54*s, 5*s, 12*s);
+  ctx.fillStyle = '#ff2266';
+  ctx.fillRect(cx - 16*s, cy - 58*s + rot, 4*s, 14*s);
+  ctx.fillRect(cx + 12*s, cy - 58*s - rot, 4*s, 14*s);
+  // 兜の縁（金）
+  ctx.fillStyle = '#ffddff';
+  ctx.fillRect(cx - 16*s, cy - 44*s, 32*s, 4*s);
+  // 目（禍々しく3つ）
+  ctx.fillStyle = '#ff0044';
+  ctx.fillRect(cx - 12*s, cy - 38*s, 8*s, 6*s);
+  ctx.fillRect(cx + 4*s,  cy - 38*s, 8*s, 6*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 3*s,  cy - 36*s, 6*s, 4*s);  // 額の第三の目
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 10*s, cy - 37*s, 3*s, 2*s);
+  ctx.fillRect(cx + 6*s,  cy - 37*s, 3*s, 2*s);
+  ctx.fillRect(cx - 1*s,  cy - 35*s, 2*s, 2*s);
+  // 魔剣（右）
+  ctx.fillStyle = '#440066';
+  ctx.fillRect(cx + 22*s, cy - 38*s, 5*s, 54*s);
+  ctx.fillRect(cx + 16*s, cy - 38*s, 16*s, 5*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 23*s, cy - 38*s, 3*s, 54*s);
+  ctx.fillStyle = '#ff2266';
+  ctx.fillRect(cx + 22*s, cy - 22*s, 5*s, 3*s);
+  ctx.fillRect(cx + 22*s, cy - 6*s,  5*s, 3*s);
+  ctx.fillRect(cx + 22*s, cy + 10*s, 5*s, 3*s);
+  // 魔法陣（左手）
+  ctx.fillStyle = color + 'aa';
+  ctx.fillRect(cx - 30*s, cy - 18*s, 14*s, 14*s);
+  ctx.fillStyle = '#0a0010';
+  ctx.fillRect(cx - 28*s, cy - 16*s, 10*s, 10*s);
+  ctx.fillStyle = '#ff2266';
+  ctx.fillRect(cx - 26*s, cy - 14*s, 6*s,  6*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 25*s, cy - 13*s, 4*s,  4*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 24*s, cy - 12*s, 2*s,  2*s);
+  // 脚
+  ctx.fillStyle = '#1a0028';
+  ctx.fillRect(cx - 14*s, cy + 10*s, 12*s, 22*s);
+  ctx.fillRect(cx + 2*s,  cy + 10*s, 12*s, 22*s);
+}
+
+// ══════════════════════════════════════════════════════════
+//  BOSS SPRITE DRAWERS（ハードモード）
+// ══════════════════════════════════════════════════════════
+
+// ─── 岩王 グラニウス ───
+function drawSprite_Granius(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2 + 2;
+  const s = isBoss ? 1.4 : 1;
+  const shake = Math.sin(Date.now() * 0.005) * 2;
+  // 岩のオーラ
+  ctx.fillStyle = color + '20';
+  ctx.fillRect(cx - 28*s, cy - 44*s, 56*s, 70*s);
+  // 体（巨大岩盤）
+  ctx.fillStyle = '#4a4a55';
+  ctx.fillRect(cx - 24*s + shake, cy - 22*s, 48*s, 40*s);
+  ctx.fillStyle = '#2a2a35';
+  ctx.fillRect(cx - 22*s, cy - 20*s, 18*s, 16*s);
+  ctx.fillRect(cx + 4*s,  cy - 20*s, 18*s, 16*s);
+  ctx.fillRect(cx - 22*s, cy - 2*s,  44*s, 16*s);
+  ctx.fillStyle = '#6a6a75';
+  ctx.fillRect(cx - 14*s, cy - 16*s, 6*s,  6*s);
+  ctx.fillRect(cx + 8*s,  cy - 16*s, 6*s,  6*s);
+  // 頭
+  ctx.fillStyle = '#4a4a55';
+  ctx.fillRect(cx - 20*s, cy - 46*s, 40*s, 26*s);
+  // 水晶の冠
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16*s, cy - 48*s, 32*s, 4*s);
+  ctx.fillRect(cx - 12*s, cy - 56*s, 5*s,  10*s);
+  ctx.fillRect(cx - 2*s,  cy - 58*s, 4*s,  12*s);
+  ctx.fillRect(cx + 7*s,  cy - 56*s, 5*s,  10*s);
+  // 目
+  ctx.fillStyle = '#4400aa';
+  ctx.fillRect(cx - 14*s, cy - 42*s, 10*s, 8*s);
+  ctx.fillRect(cx + 4*s,  cy - 42*s, 10*s, 8*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 12*s, cy - 40*s, 6*s,  4*s);
+  ctx.fillRect(cx + 6*s,  cy - 40*s, 6*s,  4*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 11*s, cy - 39*s, 2*s,  2*s);
+  ctx.fillRect(cx + 7*s,  cy - 39*s, 2*s,  2*s);
+  // 口（岩の割れ目）
+  ctx.fillStyle = '#1a1a25';
+  ctx.fillRect(cx - 10*s, cy - 30*s, 20*s, 5*s);
+  ctx.fillStyle = '#6600aa';
+  ctx.fillRect(cx - 8*s,  cy - 29*s, 4*s,  3*s);
+  ctx.fillRect(cx + 4*s,  cy - 29*s, 4*s,  3*s);
+  // 腕（岩盤）
+  ctx.fillStyle = '#4a4a55';
+  ctx.fillRect(cx - 44*s + shake, cy - 18*s, 22*s, 24*s);
+  ctx.fillRect(cx + 22*s - shake, cy - 18*s, 22*s, 24*s);
+  ctx.fillStyle = '#2a2a35';
+  ctx.fillRect(cx - 46*s, cy - 4*s,  24*s, 14*s);
+  ctx.fillRect(cx + 22*s, cy - 4*s,  24*s, 14*s);
+  // 脚
+  ctx.fillStyle = '#4a4a55';
+  ctx.fillRect(cx - 18*s, cy + 18*s, 14*s, 20*s);
+  ctx.fillRect(cx + 4*s,  cy + 18*s, 14*s, 20*s);
+}
+
+// ─── 炎獣 イグナール ───
+function drawSprite_Ignar(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const flame = Math.sin(Date.now() * 0.005) * 4;
+  // 炎のオーラ（より激しく）
+  ctx.fillStyle = '#ff330044';
+  ctx.fillRect(cx - 32*s, cy - 52*s, 64*s, 84*s);
+  ctx.fillStyle = '#ff660022';
+  ctx.fillRect(cx - 26*s, cy - 46*s - flame, 52*s, 72*s + flame*2);
+  // 4本脚の炎獣
+  ctx.fillStyle = '#6a0000';
+  ctx.fillRect(cx - 22*s, cy - 16*s, 44*s, 32*s);
+  // 体の炎模様
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 2*s,  cy - 14*s, 4*s,  26*s);
+  ctx.fillRect(cx - 18*s, cy - 2*s,  36*s, 4*s);
+  ctx.fillStyle = '#ffaa00';
+  ctx.fillRect(cx - 1*s,  cy - 13*s, 2*s,  24*s);
+  // 首と頭
+  ctx.fillStyle = '#6a0000';
+  ctx.fillRect(cx - 14*s, cy - 34*s, 28*s, 20*s);
+  ctx.fillRect(cx - 18*s, cy - 44*s, 36*s, 14*s);
+  ctx.fillRect(cx - 22*s, cy - 38*s, 44*s, 8*s);
+  // 炎のたてがみ
+  ctx.fillStyle = '#ff6600';
+  for (let i = 0; i < 5; i++) {
+    const h = 8 + (i % 2) * 4;
+    ctx.fillRect(cx - 18*s + i*8*s, cy - 48*s - flame * (i%2+0.5), 5*s, h*s + flame);
+  }
+  ctx.fillStyle = '#ffcc00';
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(cx - 14*s + i*8*s, cy - 46*s - flame, 3*s, 6*s + flame);
+  }
+  // 目（4つ）
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 14*s, cy - 40*s, 6*s, 5*s);
+  ctx.fillRect(cx + 8*s,  cy - 40*s, 6*s, 5*s);
+  ctx.fillRect(cx - 8*s,  cy - 40*s, 5*s, 4*s);
+  ctx.fillRect(cx + 3*s,  cy - 40*s, 5*s, 4*s);
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx - 12*s, cy - 38*s, 2*s, 2*s);
+  ctx.fillRect(cx + 10*s, cy - 38*s, 2*s, 2*s);
+  // 4本の脚
+  ctx.fillStyle = '#6a0000';
+  ctx.fillRect(cx - 20*s, cy + 16*s, 10*s, 16*s);
+  ctx.fillRect(cx - 8*s,  cy + 16*s, 10*s, 16*s);
+  ctx.fillRect(cx + 4*s,  cy + 16*s, 10*s, 16*s);
+  ctx.fillRect(cx + 14*s, cy + 16*s, 10*s, 16*s);
+  // 爪
+  ctx.fillStyle = '#ff4400';
+  for (let i = 0; i < 4; i++) {
+    const bx = cx + (-20 + i*12)*s;
+    ctx.fillRect(bx,       cy + 30*s, 3*s, 5*s);
+    ctx.fillRect(bx + 4*s, cy + 30*s, 3*s, 5*s);
+  }
+}
+
+// ─── 雷皇 ザンヴォルト ───
+function drawSprite_Zanvolt(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const bolt = Math.sin(Date.now() * 0.008) > 0.3;
+  const arc  = Math.sin(Date.now() * 0.012) > 0.5;
+  // 雷のオーラ
+  if (bolt) {
+    ctx.fillStyle = color + '44';
+    ctx.fillRect(cx - 30*s, cy - 50*s, 60*s, 80*s);
+  }
+  ctx.fillStyle = color + '18';
+  ctx.fillRect(cx - 26*s, cy - 46*s, 52*s, 72*s);
+  // 体（黄金の鎧）
+  ctx.fillStyle = '#4a4400';
+  ctx.fillRect(cx - 20*s, cy - 22*s, 40*s, 34*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 18*s, cy - 20*s, 5*s,  30*s);
+  ctx.fillRect(cx + 13*s, cy - 20*s, 5*s,  30*s);
+  ctx.fillRect(cx - 18*s, cy - 20*s, 36*s, 5*s);
+  ctx.fillRect(cx - 18*s, cy + 6*s,  36*s, 5*s);
+  // 胸紋章（雷）
+  ctx.fillStyle = '#ffffaa';
+  ctx.fillRect(cx - 2*s,  cy - 18*s, 4*s,  18*s);
+  ctx.fillRect(cx - 6*s,  cy - 10*s, 12*s, 4*s);
+  // 頭（皇帝の兜）
+  ctx.fillStyle = '#4a4400';
+  ctx.fillRect(cx - 18*s, cy - 46*s, 36*s, 26*s);
+  // 冠（雷）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 18*s, cy - 48*s, 36*s, 4*s);
+  ctx.fillRect(cx - 2*s,  cy - 58*s, 4*s,  12*s);
+  ctx.fillRect(cx - 10*s, cy - 54*s, 3*s,  8*s);
+  ctx.fillRect(cx + 7*s,  cy - 54*s, 3*s,  8*s);
+  ctx.fillRect(cx - 14*s, cy - 52*s, 3*s,  6*s);
+  ctx.fillRect(cx + 11*s, cy - 52*s, 3*s,  6*s);
+  // 目（稲妻色）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 13*s, cy - 40*s, 9*s, 7*s);
+  ctx.fillRect(cx + 4*s,  cy - 40*s, 9*s, 7*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 11*s, cy - 38*s, 4*s, 3*s);
+  ctx.fillRect(cx + 6*s,  cy - 38*s, 4*s, 3*s);
+  // 巨大な雷剣（両手）
+  ctx.fillStyle = '#888822';
+  ctx.fillRect(cx - 36*s, cy - 44*s, 5*s, 60*s);
+  ctx.fillRect(cx - 40*s, cy - 44*s, 14*s, 5*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 35*s, cy - 44*s, 3*s, 60*s);
+  ctx.fillStyle = '#888822';
+  ctx.fillRect(cx + 31*s, cy - 44*s, 5*s, 60*s);
+  ctx.fillRect(cx + 27*s, cy - 44*s, 14*s, 5*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx + 32*s, cy - 44*s, 3*s, 60*s);
+  // 雷エフェクト（点滅）
+  if (arc) {
+    ctx.fillStyle = '#ffffaa';
+    ctx.fillRect(cx - 38*s, cy - 30*s, 4*s, 8*s);
+    ctx.fillRect(cx - 36*s, cy - 22*s, 4*s, 8*s);
+    ctx.fillRect(cx - 34*s, cy - 14*s, 4*s, 8*s);
+    ctx.fillRect(cx + 30*s, cy - 20*s, 4*s, 8*s);
+    ctx.fillRect(cx + 32*s, cy - 12*s, 4*s, 8*s);
+  }
+  // 脚
+  ctx.fillStyle = '#4a4400';
+  ctx.fillRect(cx - 14*s, cy + 12*s, 12*s, 20*s);
+  ctx.fillRect(cx + 2*s,  cy + 12*s, 12*s, 20*s);
+}
+
+// ─── 深淵神 アビサル ───
+function drawSprite_Abyssal(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const pulse = Math.sin(Date.now() * 0.002) * 5;
+  const swirl = Math.sin(Date.now() * 0.001) * 3;
+  // 深淵の虚無（多重オーラ）
+  ctx.fillStyle = '#00000088';
+  ctx.fillRect(cx - 34*s, cy - 54*s, 68*s, 88*s);
+  ctx.fillStyle = color + '30';
+  ctx.fillRect(cx - 30*s, cy - 50*s + swirl, 60*s, 80*s - swirl);
+  ctx.fillStyle = '#2200aa18';
+  ctx.fillRect(cx - 26*s, cy - 46*s - pulse, 52*s, 76*s + pulse*2);
+  // 触手（4本）
+  ctx.fillStyle = '#1a0044';
+  ctx.fillRect(cx - 36*s, cy - 10*s + swirl, 14*s, 6*s);
+  ctx.fillRect(cx - 40*s, cy - 2*s + swirl,  10*s, 6*s);
+  ctx.fillRect(cx + 22*s, cy - 10*s - swirl, 14*s, 6*s);
+  ctx.fillRect(cx + 30*s, cy - 2*s - swirl,  10*s, 6*s);
+  // 下の触手
+  ctx.fillRect(cx - 28*s, cy + 16*s, 10*s, 6*s);
+  ctx.fillRect(cx - 32*s, cy + 22*s,  8*s, 5*s);
+  ctx.fillRect(cx + 18*s, cy + 16*s, 10*s, 6*s);
+  ctx.fillRect(cx + 24*s, cy + 22*s,  8*s, 5*s);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 40*s, cy - 2*s, 3*s, 3*s);
+  ctx.fillRect(cx + 37*s, cy - 2*s, 3*s, 3*s);
+  // 体（不定形）
+  ctx.fillStyle = '#0a0020';
+  ctx.fillRect(cx - 20*s, cy - 22*s, 40*s, 38*s);
+  ctx.fillStyle = '#1a0044';
+  ctx.fillRect(cx - 24*s, cy - 16*s, 48*s, 26*s);
+  // 体の紋様
+  ctx.fillStyle = color + '88';
+  ctx.fillRect(cx - 4*s,  cy - 18*s, 8*s,  30*s);
+  ctx.fillRect(cx - 16*s, cy - 4*s,  32*s, 8*s);
+  ctx.fillStyle = color + 'aa';
+  ctx.fillRect(cx - 2*s,  cy - 16*s, 4*s,  26*s);
+  // 頭（巨大な眼球）
+  ctx.fillStyle = '#0a0020';
+  ctx.fillRect(cx - 18*s, cy - 50*s, 36*s, 30*s);
+  // 中央の大きな目
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 14*s, cy - 46*s, 28*s, 20*s);
+  ctx.fillStyle = '#000022';
+  ctx.fillRect(cx - 10*s, cy - 44*s, 20*s, 16*s);
+  ctx.fillStyle = '#ff00ff';
+  ctx.fillRect(cx - 5*s,  cy - 40*s, 10*s, 8*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 2*s,  cy - 38*s, 4*s,  4*s);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(cx - 1*s,  cy - 37*s, 2*s,  2*s);
+  // 小さな目（複数）
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 16*s, cy - 44*s, 4*s, 3*s);
+  ctx.fillRect(cx + 12*s, cy - 44*s, 4*s, 3*s);
+  ctx.fillRect(cx - 14*s, cy - 32*s, 3*s, 3*s);
+  ctx.fillRect(cx + 11*s, cy - 32*s, 3*s, 3*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 15*s, cy - 43*s, 2*s, 2*s);
+  ctx.fillRect(cx + 13*s, cy - 43*s, 2*s, 2*s);
+  // 下部（霧）
+  ctx.fillStyle = color + '22';
+  ctx.fillRect(cx - 22*s, cy + 16*s, 44*s, 16*s);
+  ctx.fillStyle = color + '11';
+  ctx.fillRect(cx - 18*s, cy + 28*s, 36*s, 10*s);
+}
+
+// ─── 混沌王 カオスロード ───
+function drawSprite_ChaosLord(ctx, W, H, color, isBoss, isElite) {
+  const cx = W / 2, cy = H / 2;
+  const s = isBoss ? 1.4 : 1;
+  const t   = Date.now() * 0.001;
+  const p1  = Math.sin(t) * 4;
+  const p2  = Math.sin(t * 1.3 + 1) * 3;
+  const p3  = Math.sin(t * 0.7 + 2) * 5;
+  // 全属性のカオスオーラ
+  ctx.fillStyle = '#ff000022'; ctx.fillRect(cx - 34*s, cy - 54*s + p1, 68*s, 88*s);
+  ctx.fillStyle = '#0000ff18'; ctx.fillRect(cx - 30*s, cy - 50*s + p2, 60*s, 80*s);
+  ctx.fillStyle = '#00ff0014'; ctx.fillRect(cx - 32*s, cy - 52*s + p3, 64*s, 84*s);
+  ctx.fillStyle = '#ffff0010'; ctx.fillRect(cx - 28*s, cy - 48*s - p1, 56*s, 76*s);
+  // マント（混沌の色変化）
+  ctx.fillStyle = `hsl(${(t * 50) % 360}, 60%, 10%)`;
+  ctx.fillRect(cx - 28*s, cy - 30*s, 56*s, 58*s);
+  ctx.fillRect(cx - 22*s, cy + 24*s, 10*s, 16*s);
+  ctx.fillRect(cx + 12*s, cy + 24*s, 10*s, 16*s);
+  // 体（鎧）
+  ctx.fillStyle = '#0a0010';
+  ctx.fillRect(cx - 20*s, cy - 22*s, 40*s, 32*s);
+  // 6色の鎧装飾（混沌）
+  const colors6 = ['#ff2200','#ff8800','#ffff00','#00ff44','#4488ff','#cc44ff'];
+  colors6.forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(cx - 18*s + i*6*s, cy - 20*s, 5*s, 28*s);
+  });
+  // 頭（巨大）
+  ctx.fillStyle = '#0a0010';
+  ctx.fillRect(cx - 20*s, cy - 50*s, 40*s, 30*s);
+  // 混沌の6本角
+  colors6.forEach((c, i) => {
+    ctx.fillStyle = c;
+    const hx = cx - 18*s + i*7*s;
+    const hy = cy - 50*s - (12 + (i%3)*6)*s + (i%2 ? p1 : p2);
+    ctx.fillRect(hx, hy, 4*s, (14 + (i%3)*6)*s);
+  });
+  // 縁取り
+  ctx.fillStyle = '#ffffff44';
+  ctx.fillRect(cx - 20*s, cy - 50*s, 40*s, 4*s);
+  // 目（7つ、それぞれ色が違う）
+  const eyeColors = ['#ff0000','#ff8800','#ffff00','#00ff44','#4488ff','#cc44ff','#ffffff'];
+  eyeColors.slice(0,3).forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(cx - 14*s + i*10*s, cy - 44*s, 7*s, 6*s);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(cx - 12*s + i*10*s, cy - 42*s, 3*s, 2*s);
+  });
+  // 額の目
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 3*s, cy - 36*s, 6*s, 6*s);
+  ctx.fillStyle = '#ff00ff';
+  ctx.fillRect(cx - 1*s, cy - 34*s, 2*s, 2*s);
+  // 武器（左：氷槍、右：炎剣）
+  ctx.fillStyle = '#88ccff';
+  ctx.fillRect(cx - 36*s, cy - 46*s, 4*s,  58*s);
+  ctx.fillRect(cx - 36*s, cy - 46*s, 8*s,   4*s);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - 34*s, cy - 46*s, 2*s,  58*s);
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(cx + 32*s, cy - 44*s, 4*s,  56*s);
+  ctx.fillRect(cx + 28*s, cy - 44*s, 12*s,  4*s);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(cx + 33*s, cy - 44*s, 2*s,  56*s);
+  // 混沌エフェクト（フリッカー）
+  if (Math.sin(t * 7) > 0.6) {
+    ctx.fillStyle = `hsla(${(t*80)%360},100%,70%,0.3)`;
+    ctx.fillRect(cx - 22*s, cy - 52*s, 44*s, 72*s);
+  }
+  // 脚
+  ctx.fillStyle = '#0a0010';
+  ctx.fillRect(cx - 14*s, cy + 10*s, 12*s, 22*s);
+  ctx.fillRect(cx + 2*s,  cy + 10*s, 12*s, 22*s);
+}
+
+// ─── 汎用（ボス・エリートの名前一致しない場合） ───
+function drawSprite_Generic(ctx, W, H, color, isBoss, isElite) {
+  const scale = isBoss ? 3 : isElite ? 2.4 : 2;
+  const S = 16 * scale;
+  const ox = Math.floor((W - S) / 2);
+  const oy = Math.floor((H - S) / 2) + (isBoss ? -4 : 0);
+  ctx.fillStyle = color;
+  ctx.fillRect(ox, oy + S * 0.25, S, S * 0.6);
+  ctx.fillRect(ox + (S - S * 0.6) / 2, oy, S * 0.6, S * 0.4);
+  ctx.fillStyle = '#ffffff';
+  const es = Math.max(2, scale * 1.5);
+  ctx.fillRect(ox + S * 0.2, oy + S * 0.1, es, es);
+  ctx.fillRect(ox + S * 0.6, oy + S * 0.1, es, es);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(ox + S * 0.2 + 1, oy + S * 0.1 + 1, es - 1, es - 1);
+  ctx.fillRect(ox + S * 0.6 + 1, oy + S * 0.1 + 1, es - 1, es - 1);
+  if (isBoss) {
+    ctx.fillStyle = '#f5c842';
+    ctx.fillRect(ox + S * 0.1, oy - scale * 4, S * 0.8, scale * 2);
+    for (let i = 0; i < 3; i++) ctx.fillRect(ox + S * (0.15 + i * 0.3), oy - scale * 6, scale * 2, scale * 3);
+  }
+}
+
+function drawEnemySprite(enemy) {
+  const W = spriteCanvas.width;
+  const H = spriteCanvas.height;
+  sctx.clearRect(0, 0, W, H);
   if (!enemy) return;
 
   const color = enemy.color || '#e84040';
   const isBoss = enemy.kind === 'boss';
   const isElite = enemy.kind === 'elite';
-  const scale = isBoss ? 3 : isElite ? 2.4 : 2;
-  const S = 16 * scale;              // sprite size
-  const ox = Math.floor((W - S) / 2);
-  const oy = Math.floor((H - S) / 2) + (isBoss ? -4 : 0);
 
-  // ボスはオーラ
+  // ボスオーラ
   if (isBoss) {
     sctx.fillStyle = color + '22';
-    sctx.fillRect(ox - 6, oy - 6, S + 12, S + 12);
+    sctx.fillRect(0, 0, W, H);
     sctx.fillStyle = color + '11';
-    sctx.fillRect(ox - 12, oy - 12, S + 24, S + 24);
+    sctx.fillRect(4, 4, W - 8, H - 8);
   }
 
-  // 胴体
-  sctx.fillStyle = color;
-  sctx.fillRect(ox, oy + Math.floor(S * 0.25), S, Math.floor(S * 0.6));
+ const spriteDrawers = {
+    // ── 通常モンスター ──
+    'スライム': drawSprite_Slime,
+    'コウモリ': drawSprite_Bat,
+    'スケルトン': drawSprite_Skeleton,
+    'オーク': drawSprite_Orc,
+    'ゴブリン': drawSprite_Goblin,
+    'ゾンビ': drawSprite_Zombie,
+    'デーモン': drawSprite_Demon,
+    'エンジェル': drawSprite_Angel,
+    'リザードマン': drawSprite_Lizard,
+    'ドラゴン': drawSprite_Dragon,
+    // ── エリート ──
+    '死神騎士': drawSprite_DeathKnight,
+    '溶岩巨人': drawSprite_LavaGiant,
+    '影の暗殺者': drawSprite_ShadowAssassin,
+    '魔将軍': drawSprite_MagicGeneral,
+    '氷刃の狩人': drawSprite_IceHunter,
+    '雷光の剣士': drawSprite_ThunderSwordsman,
+    '闇の司祭': drawSprite_DarkPriest,
+    '無属の釈迦': drawSprite_AbyssMonk,
+    // ── ボス（ノーマル） ──
+    '地下王 ゴーレム': drawSprite_Golem,
+    '炎王 イフリート': drawSprite_Ifrit,
+    '深淵龍 ヴォルグ': drawSprite_Volg,
+    '魔王 ダルクロア': drawSprite_Darkroa,
+    // ── ボス（ハード） ──
+    '岩王 グラニウス': drawSprite_Granius,
+    '炎獣 イグナール': drawSprite_Ignar,
+    '雷皇 ザンヴォルト': drawSprite_Zanvolt,
+    '深淵神 アビサル': drawSprite_Abyssal,
+    '混沌王 カオスロード': drawSprite_ChaosLord,
+  };
 
-  // 頭
-  const headW = Math.floor(S * 0.6);
-  const headH = Math.floor(S * 0.4);
-  const headX = ox + Math.floor((S - headW) / 2);
-  const headY = oy;
-  sctx.fillStyle = color;
-  sctx.fillRect(headX, headY, headW, headH);
-
-  // 目（白）
-  const eyeSize = Math.max(2, Math.floor(scale * 1.5));
-  sctx.fillStyle = '#ffffff';
-  sctx.fillRect(headX + Math.floor(headW * 0.2), headY + Math.floor(headH * 0.3), eyeSize, eyeSize);
-  sctx.fillRect(headX + Math.floor(headW * 0.6), headY + Math.floor(headH * 0.3), eyeSize, eyeSize);
-
-  // 瞳（黒）
-  sctx.fillStyle = '#000000';
-  sctx.fillRect(headX + Math.floor(headW * 0.2) + 1, headY + Math.floor(headH * 0.3) + 1, eyeSize - 1, eyeSize - 1);
-  sctx.fillRect(headX + Math.floor(headW * 0.6) + 1, headY + Math.floor(headH * 0.3) + 1, eyeSize - 1, eyeSize - 1);
-
-  // 足
-  const legW = Math.floor(S * 0.25);
-  const legH = Math.floor(S * 0.2);
-  const legY = oy + Math.floor(S * 0.75);
-  sctx.fillStyle = color;
-  sctx.fillRect(ox + Math.floor(S * 0.1), legY, legW, legH);
-  sctx.fillRect(ox + Math.floor(S * 0.65), legY, legW, legH);
-
-  // ボス：王冠
-  if (isBoss) {
-    sctx.fillStyle = '#f5c842';
-    const crownY = headY - Math.floor(scale * 3);
-    sctx.fillRect(headX, crownY, headW, Math.floor(scale * 2));
-    for (let i = 0; i < 3; i++) {
-      sctx.fillRect(headX + Math.floor(headW * (0.1 + i * 0.35)), crownY - Math.floor(scale * 2), Math.floor(scale * 2), Math.floor(scale * 2));
-    }
+  const drawer = spriteDrawers[enemy.name];
+  if (drawer) {
+    drawer(sctx, W, H, color, isBoss, isElite);
+  } else {
+    drawSprite_Generic(sctx, W, H, color, isBoss, isElite);
   }
 
-  // エリート：肩の角
-  if (isElite) {
-    sctx.fillStyle = '#ff66aa';
-    sctx.fillRect(ox - Math.floor(scale), oy + Math.floor(S * 0.25), Math.floor(scale * 2), Math.floor(scale * 3));
-    sctx.fillRect(ox + S - Math.floor(scale), oy + Math.floor(S * 0.25), Math.floor(scale * 2), Math.floor(scale * 3));
-  }
-
-  // HPゲージ（スプライト下）
-  const barW = W - 8;
-  const barH = 6;
-  const barX = 4;
-  const barY = H - barH - 4;
+  // HPゲージ（共通）
+  const barW = W - 8, barH = 6, barX = 4, barY = H - barH - 4;
   sctx.fillStyle = '#1a1a28';
   sctx.fillRect(barX, barY, barW, barH);
   const hpRatio = Math.max(0, enemy.hp / enemy.maxHp);
@@ -1398,7 +2896,6 @@ function drawEnemySprite(enemy) {
   sctx.lineWidth = 1;
   sctx.strokeRect(barX, barY, barW, barH);
 }
-
 // ══════════════════════════════════════════════════════════
 //  DAMAGE POPUP SYSTEM
 // ══════════════════════════════════════════════════════════
@@ -1414,7 +2911,9 @@ function spawnPopup(gridX, gridY, text, color = '#ffffff') {
 function updatePopups() {
   for (let i = popups.length - 1; i >= 0; i--) {
     const p = popups[i];
-    p.y += p.vy; p.vy *= 0.96; p.life--;
+    p.x += (p.vx || 0); p.y += p.vy;
+    p.vy *= 0.96; if (p.vx) p.vx *= 0.94;
+    p.life--;
     if (p.life <= 0) popups.splice(i, 1);
   }
 }
@@ -1447,8 +2946,10 @@ requestAnimationFrame(popupLoop);
 function startGame(classId) {
   document.getElementById('overlay').classList.remove('active');
   const cls = CLASSES[classId] || CLASSES.warrior;
+  const savedMode = G.mode || 'normal';
   G = {
     floor: 1,
+    mode: savedMode,
     playerClass: cls,
     player: {
       hp: cls.hp, maxHp: cls.hp,
@@ -1474,6 +2975,15 @@ function startGame(classId) {
     nextShopFloor: 1 + Math.floor(Math.random() * 3),
   };
   document.getElementById('class-badge').textContent = cls.icon + ' ' + cls.name;
+  const mb = document.getElementById('mode-badge');
+  if (mb) {
+    if (savedMode === 'hard') {
+      mb.textContent = '💀 HARD MODE';
+      mb.style.display = 'block';
+    } else {
+      mb.style.display = 'none';
+    }
+  }
   generateFloor();
   log(`${cls.name}がダンジョンに足を踏み入れた…`, 'sys');
   updateItemList();
@@ -1484,7 +2994,9 @@ function startGame(classId) {
 // ══════════════════════════════════════════════════════════
 //  MAP GENERATION
 // ══════════════════════════════════════════════════════════
- function generateFloor() {
+
+function generateFloor() {
+  G._regenSteps = 0;
   if (G.mode === 'hard' && G.floor > 25) {
     gameWin();
     return;
@@ -1496,7 +3008,7 @@ function startGame(classId) {
   }
   G.isBossFloor = G.floor % 5 === 0;
   // 以下既存のまま
- 
+
   const map = Array.from({ length: ROWS }, () => new Array(COLS).fill(TILE_WALL));
   const explored = Array.from({ length: ROWS }, () => new Array(COLS).fill(false));
   const rooms = [];
@@ -1518,15 +3030,23 @@ function startGame(classId) {
   for (let i = 1; i < rooms.length; i++)
     carveCorridor(map, rooms[i - 1].cx, rooms[i - 1].cy, rooms[i].cx, rooms[i].cy);
 
+  if (rooms.length === 0) {
+    const fallback = { x: 10, y: 7, w: 10, h: 6, cx: 15, cy: 10 };
+    rooms.push(fallback);
+    for (let ry = fallback.y; ry < fallback.y + fallback.h; ry++)
+      for (let rx = fallback.x; rx < fallback.x + fallback.w; rx++)
+        map[ry][rx] = TILE_FLOOR;
+  }
+
   G.px = rooms[0].cx;
   G.py = rooms[0].cy;
 
   const lr = rooms[rooms.length - 1];
   map[lr.cy][lr.cx] = TILE_STAIR;
 
- const isHard = G.mode === 'hard';
-const chestRate = (isHard ? 0.2 : 0.4) + (G.player ? (G.player.passives.treasureBoost || 0) : 0);
-rooms.slice(1, -1).forEach(r => {
+  const isHard = G.mode === 'hard';
+  const chestRate = (isHard ? 0.2 : 0.4) + (G.player ? (G.player.passives.treasureBoost || 0) : 0);
+  rooms.slice(1, -1).forEach(r => {
     if (Math.random() < chestRate) {
       const fx = r.x + 1 + Math.floor(Math.random() * (r.w - 2));
       const fy = r.y + 1 + Math.floor(Math.random() * (r.h - 2));
@@ -1536,24 +3056,25 @@ rooms.slice(1, -1).forEach(r => {
 
   G.shopStock = null;
   const isHardMode = G.mode === 'hard';
-const isShopFloor = isHardMode
-  ? (G.floor % 5 === 0)
-  : G.floor >= G.nextShopFloor;
-if (isShopFloor && rooms.length >= 3) {
-  const shopRoomIdx = 1 + Math.floor(Math.random() * Math.max(1, rooms.length - 2));
-  const sr = rooms[shopRoomIdx];
-  map[sr.cy][sr.cx] = TILE_SHOP;
-  if (!isHardMode) {
-    G.nextShopFloor = G.floor + 1 + Math.floor(Math.random() * 3);
+  const isShopFloor = isHardMode
+    ? (G.floor % 5 === 0)
+    : G.floor >= G.nextShopFloor;
+  if (isShopFloor && rooms.length >= 3) {
+    const shopRoomIdx = 1 + Math.floor(Math.random() * Math.max(1, rooms.length - 2));
+    const sr = rooms[shopRoomIdx];
+    map[sr.cy][sr.cx] = TILE_SHOP;
+    if (!isHardMode) {
+      G.nextShopFloor = G.floor + 1 + Math.floor(Math.random() * 3);
+    }
+    log(`🏪 このフロアに商売屋がある！`, 'shop');
   }
-  log(`🏪 このフロアに商売屋がある！`, 'shop');
-}
 
   const enemies = [];
   const fl = G.floor;
 
   if (G.isBossFloor) {
-    const bossIdx = Math.min(Math.floor(fl / 5) - 1, BOSS_TYPES.length - 1);
+    const bossList = G.mode === 'hard' ? HARD_BOSS_TYPES : BOSS_TYPES;
+    const bossIdx = Math.min(Math.floor(fl / 5) - 1, bossList.length - 1);
     const boss = makeBoss(lr.cx, lr.cy, fl, bossIdx);
     enemies.push(boss);
     log(`⚠ ${G.floor}Fはボスフロア！`, 'boss');
@@ -1573,8 +3094,8 @@ if (isShopFloor && rooms.length >= 3) {
         const ey = r.y + 1 + Math.floor(Math.random() * (r.h - 2));
         if (map[ey][ex] === TILE_FLOOR && !(ex === G.px && ey === G.py)) {
           const isHardElite = G.mode === 'hard';
-const eliteFloorMin = isHardElite ? 5 : 5;
-const isElite = Math.random() < 0.15 && fl >= eliteFloorMin;
+          const eliteFloorMin = isHardElite ? 5 : 5;
+          const isElite = Math.random() < 0.15 && fl >= eliteFloorMin;
           enemies.push(isElite ? makeElite(ex, ey, fl) : makeEnemy(ex, ey, fl));
         }
       }
@@ -1601,13 +3122,19 @@ function makeEnemy(x, y, floor) {
   const isHard = G.mode === 'hard';
   const tier = Math.min(Math.floor(Math.random() * (floor + 2)), ENEMY_TYPES.length - 1);
   const base = ENEMY_TYPES[tier];
-  const scale = (1 + (floor - 1) * 0.2) * (isHard ? 1.25 : 1);
+  const scale = Math.min((1 + (floor - 1) * 0.2) * (isHard ? 1.25 : 1), 2.0);
   const hp = Math.ceil(base.hp * scale);
-  return { 
-    ...base, x, y, hp, maxHp: hp, 
-    atk: Math.ceil(base.atk * scale), 
-    def: Math.ceil(base.def * scale), 
-    kind: 'normal' 
+  const pattern = ENEMY_PATTERNS[base.name] || { actions: ['atk'], phase2: null };
+  const nextIntent = pickEnemyIntent(pattern.actions, null, null);
+  return {
+    ...base, x, y, hp, maxHp: hp,
+    atk: Math.ceil(base.atk * scale),
+    def: Math.ceil(base.def * scale),
+    kind: 'normal',
+    pattern,
+    nextIntent,
+    lastIntent: null,
+    secondLastIntent: null,
   };
 }
 
@@ -1622,46 +3149,17 @@ function makeElite(x, y, floor) {
   const base = pool[Math.floor(Math.random() * pool.length)];
   const scale = (1 + (floor - 1) * 0.25) * (isHard ? 1.25 : 1);
   const hp = Math.ceil(base.hp * scale);
-  return { ...base, x, y, hp, maxHp: hp, atk: Math.ceil(base.atk * scale), def: Math.ceil(base.def * scale), kind: 'elite', buffed: false, burnTurns: 0 };
-}
-
-function makeBoss(x, y, floor, idx) {
-  const isHard = G.mode === 'hard';
-  const baseArr = isHard ? HARD_BOSS_TYPES : BOSS_TYPES;
-  const base = baseArr[idx];
-  const scale = isHard
-    ? 1 + Math.floor(floor / 5 - 1) * 0.35
-    : 1 + Math.floor(floor / 5 - 1) * 0.3;
-  const hp = Math.ceil(base.hp * scale);
+  const pattern = { actions: [base.special, 'atk', 'atk'], phase2: base.special };
+  const nextIntent = pickEnemyIntent(pattern.actions, null, null);
   return {
     ...base, x, y, hp, maxHp: hp,
     atk: Math.ceil(base.atk * scale),
     def: Math.ceil(base.def * scale),
-    phase2Atk: Math.ceil(base.phase2Atk * scale),
-    kind: 'boss', phase2: false, buffed: false,
-    nextIntent: pickBossIntent(base.special),
-    // ハードモード専用フラグ
-    firstTurn: true,
-    defIgnoreTurns: 0,
+    kind: 'elite', buffed: false, burnTurns: 0,
+    pattern, nextIntent,
+    lastIntent: null,
+    secondLastIntent: null,
   };
-}
-
-function pickBossIntent(special) {
-  const roll = Math.random();
-  if (special === 'buff' && roll < 0.3) return 'buff';
-  if (special === 'burn' && roll < 0.35) return 'burn';
-  if (special === 'slam' && roll < 0.3) return 'slam';
-  if (special === 'drain' && roll < 0.3) return 'drain';
-  // ハードモード専用
-  if (special === 'multi' && roll < 0.4) return 'multi';
-  if (special === 'abyss' && roll < 0.35) return 'abyss_def';
-  if (special === 'chaos') return pickChaosIntent();
-  return 'atk';
-}
-
-function pickChaosIntent() {
-  const intents = ['slam', 'burn', 'multi', 'abyss_def', 'drain', 'buff', 'atk'];
-  return intents[Math.floor(Math.random() * intents.length)];
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1677,10 +3175,64 @@ function updateFOV() {
       }
 }
 
+function drawPlayerSprite(targetCtx, x, y) {
+  const clsId = Object.keys(CLASSES).find(k => CLASSES[k] === G.playerClass) || 'warrior';
+  const cls = G.playerClass || CLASSES[clsId] || CLASSES.warrior;
+  const color = cls.color || '#f5c842';
+  const cx = x + TILE / 2;
+  const top = y + 2;
+
+  targetCtx.save();
+  targetCtx.shadowColor = color;
+  targetCtx.shadowBlur = 8;
+
+  targetCtx.fillStyle = color + '33';
+  targetCtx.fillRect(x + 2, y + 2, TILE - 4, TILE - 2);
+
+  targetCtx.fillStyle = '#111118';
+  targetCtx.fillRect(cx - 5, top + 6, 10, 7);
+  targetCtx.fillStyle = color;
+  targetCtx.fillRect(cx - 4, top + 5, 8, 8);
+
+  targetCtx.fillStyle = '#ffd7aa';
+  targetCtx.fillRect(cx - 4, top + 1, 8, 6);
+
+  targetCtx.shadowBlur = 0;
+  targetCtx.fillStyle = '#ffffff';
+  targetCtx.fillRect(cx - 3, top + 3, 2, 2);
+  targetCtx.fillRect(cx + 1, top + 3, 2, 2);
+  targetCtx.fillStyle = '#000000';
+  targetCtx.fillRect(cx - 2, top + 4, 1, 1);
+  targetCtx.fillRect(cx + 2, top + 4, 1, 1);
+
+  targetCtx.fillStyle = '#f5c842';
+  if (clsId === 'warrior') {
+    targetCtx.fillRect(x + 11, y + 4, 2, 9);
+    targetCtx.fillRect(x + 10, y + 4, 4, 2);
+  } else if (clsId === 'mage') {
+    targetCtx.fillRect(x + 11, y + 4, 2, 9);
+    targetCtx.fillStyle = '#4488ff';
+    targetCtx.fillRect(x + 10, y + 2, 4, 4);
+  } else if (clsId === 'rogue') {
+    targetCtx.fillStyle = '#3ee8cc';
+    targetCtx.fillRect(x + 2, y + 11, 5, 2);
+    targetCtx.fillRect(x + 9, y + 11, 5, 2);
+  } else if (clsId === 'cleric') {
+    targetCtx.fillRect(cx - 1, y + 1, 2, 7);
+    targetCtx.fillRect(cx - 4, y + 3, 8, 2);
+  }
+
+  targetCtx.fillStyle = '#00000066';
+  targetCtx.fillRect(x + 4, y + 14, 8, 1);
+  targetCtx.restore();
+}
+
 // ══════════════════════════════════════════════════════════
 //  RENDER
 // ══════════════════════════════════════════════════════════
 function renderAll() {
+  if (!G.map || !G.explored || !G.player) return;
+
   ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
   ctx.fillStyle = '#050508';
   ctx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
@@ -1708,10 +3260,29 @@ function renderAll() {
         ctx.fillStyle = '#222235'; ctx.fillRect(wx, wy, TILE - 1, TILE - 1);
         ctx.fillStyle = '#2a2a3e'; ctx.fillRect(wx + 1, wy + 1, TILE - 3, TILE - 3);
       } else {
-        ctx.fillStyle = (x + y) % 3 === 0 ? '#181820' : '#14141e';
-        ctx.fillRect(wx, wy, TILE, TILE);
-        ctx.fillStyle = '#0f0f18';
-        ctx.fillRect(wx, wy, TILE, 1); ctx.fillRect(wx, wy, 1, TILE);
+        // ハードモードの通路（部屋外）はダメージ床として赤みがかった色に
+        const inRoom = G.rooms && G.rooms.some(r =>
+          x >= r.x && x < r.x + r.w &&
+          y >= r.y && y < r.y + r.h
+        );
+        const isHardCorridor = G.mode === 'hard' && G.floor >= 10 && !inRoom && tile === TILE_FLOOR;
+        if (isHardCorridor) {
+          ctx.fillStyle = (x + y) % 3 === 0 ? '#201010' : '#180c0c';
+          ctx.fillRect(wx, wy, TILE, TILE);
+          ctx.fillStyle = '#2a0808';
+          ctx.fillRect(wx, wy, TILE, 1); ctx.fillRect(wx, wy, 1, TILE);
+          // 小さな赤いドット（トゲ表現）
+          ctx.fillStyle = '#5a1010';
+          ctx.fillRect(wx + 4, wy + 4, 2, 2);
+          ctx.fillRect(wx + 10, wy + 10, 2, 2);
+          ctx.fillRect(wx + 10, wy + 4, 2, 2);
+          ctx.fillRect(wx + 4, wy + 10, 2, 2);
+        } else {
+          ctx.fillStyle = (x + y) % 3 === 0 ? '#181820' : '#14141e';
+          ctx.fillRect(wx, wy, TILE, TILE);
+          ctx.fillStyle = '#0f0f18';
+          ctx.fillRect(wx, wy, TILE, 1); ctx.fillRect(wx, wy, 1, TILE);
+        }
 
         if (tile === TILE_STAIR) {
           ctx.fillStyle = '#f5c842';
@@ -1781,19 +3352,8 @@ function renderAll() {
     ctx.fillRect(e.x * TILE + 1, e.y * TILE + 1, Math.round(14 * e.hp / e.maxHp), 2);
   });
 
-  const p = G.player;
-  ctx.fillStyle = '#3ecc6f';
-  ctx.fillRect(px * TILE + 3, py * TILE + 3, 10, 10);
-  ctx.fillStyle = '#7aff9e';
-  ctx.fillRect(px * TILE + 5, py * TILE + 4, 6, 4);
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(px * TILE + 6, py * TILE + 5, 2, 2);
-
-  if (p.passives && p.passives.barrier > 0) {
-    ctx.strokeStyle = '#4488ff44'; ctx.lineWidth = 2;
-    ctx.strokeRect(px * TILE + 1, py * TILE + 1, TILE - 2, TILE - 2);
-    ctx.lineWidth = 1;
-  }
+  // 職業別プレイヤースプライト
+  drawPlayerSprite(ctx, px * TILE, py * TILE);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1828,7 +3388,14 @@ function tryMove(dx, dy) {
   updateFOV();
 
   const p = G.player;
-  if (p.passives.regen) { p.hp = Math.min(p.hp + p.passives.regen, p.maxHp); }
+  if (p.passives.regen) {
+    // 自然回復（ALL_SKILLS由来）は100歩上限、戦士系regenは50歩上限
+    const regenLimit = (p.skills && p.skills.some(s => s.id === 'regen')) ? 100 : 50;
+    G._regenSteps = (G._regenSteps || 0) + 1;
+    if (G._regenSteps <= regenLimit) {
+      p.hp = Math.min(p.hp + p.passives.regen, p.maxHp);
+    }
+  }
   if (p.passives.mpRegen) { p.mp = Math.min(p.mp + p.passives.mpRegen, p.maxMp); }
 
   if (tile === TILE_STAIR) {
@@ -1891,6 +3458,58 @@ function executeSelectedCommand() {
 // ══════════════════════════════════════════════════════════
 //  COMBAT
 // ══════════════════════════════════════════════════════════
+// ── 会心フラッシュ ──
+function triggerCritFlash() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(245,200,66,0.25);
+    pointer-events:none;z-index:999;
+    animation:critflash 0.35s ease-out forwards;
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 400);
+}
+
+// ── ボス登場シェイク ──
+function triggerBossShake() {
+  const wrap = document.getElementById('map-container');
+  if (!wrap) return;
+  wrap.style.animation = 'none';
+  wrap.offsetWidth; // reflow
+  wrap.style.animation = 'bossshake 0.5s ease-out';
+  setTimeout(() => wrap.style.animation = '', 600);
+}
+
+// ── 撃破パーティクル ──
+function spawnDefeatParticles(gridX, gridY, color) {
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const speed = 0.8 + Math.random() * 1.2;
+    popups.push({
+      x: gridX * TILE + TILE / 2,
+      y: gridY * TILE + TILE / 2,
+      text: '★',
+      color: color,
+      life: 40 + Math.floor(Math.random() * 20),
+      maxLife: 60,
+      vy: Math.sin(angle) * speed - 1,
+      vx: Math.cos(angle) * speed,
+    });
+  }
+}
+
+// ── スキルカラーエフェクト ──
+function triggerSkillFlash(color) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:${color}22;
+    pointer-events:none;z-index:999;
+    animation:critflash 0.4s ease-out forwards;
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 450);
+}
+
 function startCombat(enemy, playerFirst = false, secondEnemy = null) {
   enemy.locked = true;
   G.inCombat = true;
@@ -1942,6 +3561,8 @@ function startCombat(enemy, playerFirst = false, secondEnemy = null) {
   } else {
     log(`${kindStr ? kindStr + '「' : ''}${enemy.name}${kindStr ? '」' : ''}が現れた！`, cls);
   }
+  if (enemy.kind === 'boss') triggerBossShake();
+
 
   combatMenuIndex = 0;
   updateCombatMenu();
@@ -1951,17 +3572,41 @@ function startCombat(enemy, playerFirst = false, secondEnemy = null) {
 function updateBossIntent() {
   const e = G.currentEnemy;
   const el = document.getElementById('enemy-intent');
-  if (!e || e.kind !== 'boss') { el.textContent = ''; el.className = ''; return; }
+  if (!e) { el.textContent = ''; el.className = ''; return; }
+
   const intentMap = {
-    atk: ['⚔ 攻撃を仕掛けてくる', 'intent-atk'],
-    slam: ['💥 強烈な一撃を準備中', 'intent-atk'],
-    burn: ['🔥 炎攻撃を準備中', 'intent-atk'],
-    drain: ['💜 MP吸収攻撃を準備中', 'intent-buff'],
-    buff: ['💪 自己強化中', 'intent-buff'],
-    heal: ['💚 回復している', 'intent-heal'],
+    atk: { icon: '⚔', label: '攻撃してくる', cls: 'intent-atk' },
+    slam: { icon: '💥', label: '強烈な一撃を準備中', cls: 'intent-atk' },
+    burn: { icon: '🔥', label: '炎攻撃をしてくる', cls: 'intent-atk' },
+    poison: { icon: '🐍', label: '毒攻撃をしてくる', cls: 'intent-atk' },
+    drain: { icon: '💜', label: 'MP吸収攻撃をしてくる', cls: 'intent-buff' },
+    buff: { icon: '💪', label: '自己強化する', cls: 'intent-buff' },
+    defend: { icon: '🛡', label: '防御態勢をとる', cls: 'intent-buff' },
+    heal: { icon: '💚', label: '回復している', cls: 'intent-heal' },
+    regen: { icon: '🌿', label: '再生している', cls: 'intent-heal' },
+    multi: { icon: '⚡', label: '連続攻撃を準備中', cls: 'intent-atk' },
+    abyss_def: { icon: '💀', label: 'DEF無視の構えをとる', cls: 'intent-atk' },
   };
-  const [text, cls] = intentMap[e.nextIntent] || ['？', ''];
-  el.textContent = text; el.className = cls;
+
+  const info = intentMap[e.nextIntent] || { icon: '？', label: '様子を見ている', cls: '' };
+
+  // 攻撃系インテントのダメージ予測
+  const atkIntents = ['atk', 'slam', 'burn', 'poison', 'multi'];
+  let dmgHint = '';
+  if (atkIntents.includes(e.nextIntent)) {
+    const p = G.player;
+    let raw;
+    if (e.nextIntent === 'slam') raw = Math.floor(e.atk * 1.8);
+    else if (e.nextIntent === 'multi') raw = Math.floor(e.atk * 0.6);
+    else raw = e.atk;
+    const predicted = Math.max(1, raw - p.def);
+    const lo = Math.max(1, predicted - 3);
+    const hi = predicted + 3;
+    dmgHint = ` (予測${lo}〜${hi})`;
+  }
+
+  el.textContent = `${info.icon} ${info.label}${dmgHint}`;
+  el.className = info.cls;
 }
 
 function endCombat() {
@@ -1969,16 +3614,20 @@ function endCombat() {
   if (G.secondEnemy) G.secondEnemy.locked = false;
   G.inCombat = false;
   G.currentEnemy = null;
-  // 奇跡の戦闘フラグリセット
   if (G.player) G.player._miracleUsed = false;
   G.secondEnemy = null;
 
-  // スキルサブメニューが開いていたら閉じる
   if (typeof skillSubMenuActive !== 'undefined' && skillSubMenuActive) {
     skillSubMenuActive = false;
   }
-  // コマンドグリッドを元に戻す
+  if (typeof itemSubMenuActive !== 'undefined' && itemSubMenuActive) {
+    itemSubMenuActive = false;
+    document.getElementById('item-submenu').classList.remove('active');
+  }
+
   if (typeof renderCombatCommands === 'function') renderCombatCommands();
+  combatMenuIndex = 0;
+  updateCombatMenu();
 
   const panel = document.getElementById('combat-panel');
   panel.classList.remove('active', 'boss-fight', 'elite-fight');
@@ -1987,7 +3636,6 @@ function endCombat() {
   document.getElementById('enemy-intent').className = '';
   document.getElementById('enemy-type-badge').textContent = '';
 
-  // スプライトcanvasをクリア
   sctx.clearRect(0, 0, spriteCanvas.width, spriteCanvas.height);
 }
 
@@ -2048,16 +3696,16 @@ function combatAction(type) {
     const critRate = (cls.perk === 'crit' ? 0.3 : 0) + (p.passives.critRate || 0);
     const critMult = p.passives.critMult || 2;
 
-   const effectiveCritMult = p.passives._kiaiReady ? (p.passives._kiaiMult || critMult) : critMult;
-if (p.passives._kiaiReady) { p.passives._kiaiReady = false; p.passives._kiaiMult = 0; }
-if (Math.random() < critRate) { dmg = Math.floor(dmg * effectiveCritMult); isCrit = true; }
+    const effectiveCritMult = p.passives._kiaiReady ? (p.passives._kiaiMult || critMult) : critMult;
+    if (p.passives._kiaiReady) { p.passives._kiaiReady = false; p.passives._kiaiMult = 0; }
+    if (Math.random() < critRate) { dmg = Math.floor(dmg * effectiveCritMult); isCrit = true; }
     if (p.passives.aoe && Math.random() < 0.5) { dmg += Math.floor(p.atk * 0.5); }
 
     let dmg2 = 0;
     if (cls.perk === 'doubleAtk') { dmg2 = Math.max(1, p.atk + Math.floor(Math.random() * 3) - def); }
-if (p.passives.defToAtk) {
-  dmg += Math.floor(p.def * p.passives.defToAtk);
-}
+    if (p.passives.defToAtk) {
+      dmg += Math.floor(p.def * p.passives.defToAtk);
+    }
     const total = dmg + dmg2;
     e.hp -= total;
 
@@ -2068,8 +3716,12 @@ if (p.passives.defToAtk) {
     }
 
     spawnPopup(e.x, e.y, isCrit ? `💥${total}` : `-${total}`, isCrit ? '#f5c842' : '#ff4444');
-    if (isCrit) log(`会心一撃！ ${e.name}に${total}ダメージ！！`, 'warn');
-    else log(`${e.name}に${dmg}${dmg2 ? `+${dmg2}` : ''}ダメージ！`, 'combat');
+    if (isCrit) {
+      log(`会心一撃！ ${e.name}に${total}ダメージ！！`, 'warn');
+      triggerCritFlash(); // ← 追加
+    } else {
+      log(`${e.name}に${dmg}${dmg2 ? `+${dmg2}` : ''}ダメージ！`, 'combat');
+    }
 
     if (e.hp <= 0) {
       if (G.secondEnemy && G.secondEnemy.hp > 0) {
@@ -2134,16 +3786,16 @@ if (p.passives.defToAtk) {
 function doEnemyAttack(e) {
   const p = G.player;
 
-if (e.kind === 'boss' && !e.phase2 && e.hp <= e.maxHp * 0.5) {
-  e.phase2 = true;
-  e.atk = e.phase2Atk;
-  if (e.special === 'multi') {
-    log(`${e.name}が激怒した！連続攻撃が激化する！`, 'boss');
-  } else {
-    log(`${e.name}が激怒した！ATKが上昇！`, 'boss');
+  if (e.kind === 'boss' && !e.phase2 && e.hp <= e.maxHp * 0.5) {
+    e.phase2 = true;
+    e.atk = e.phase2Atk;
+    if (e.special === 'multi') {
+      log(`${e.name}が激怒した！連続攻撃が激化する！`, 'boss');
+    } else {
+      log(`${e.name}が激怒した！ATKが上昇！`, 'boss');
+    }
+    spawnPopup(e.x, e.y, '激怒！', '#ff8c00');
   }
-  spawnPopup(e.x, e.y, '激怒！', '#ff8c00');
-}
 
 
   if (e.kind === 'boss') {
@@ -2152,9 +3804,26 @@ if (e.kind === 'boss' && !e.phase2 && e.hp <= e.maxHp * 0.5) {
     updateBossIntent();
   } else if (e.kind === 'elite') {
     executeEliteAction(e);
+    if (e.pattern) {
+      const actions = (e.hp <= e.maxHp * 0.5 && e.pattern.phase2)
+        ? [e.pattern.phase2, 'atk']
+        : e.pattern.actions;
+      e.secondLastIntent = e.lastIntent;
+      e.lastIntent = e.nextIntent;
+      e.nextIntent = pickEnemyIntent(actions, e.lastIntent, e.secondLastIntent);
+    }
   } else {
-    normalEnemyHit(e, e.atk);
+    executeNormalEnemyAction(e);
+    if (e.pattern) {
+      const actions = (e.hp <= e.maxHp * 0.5 && e.pattern.phase2)
+        ? [e.pattern.phase2, 'atk']
+        : e.pattern.actions;
+      e.secondLastIntent = e.lastIntent;
+      e.lastIntent = e.nextIntent;
+      e.nextIntent = pickEnemyIntent(actions, e.lastIntent, e.secondLastIntent);
+    }
   }
+
 
   // 2体目が生きていれば追加攻撃
   if (G.secondEnemy && G.secondEnemy.hp > 0 && G.inCombat && p.hp > 0) {
@@ -2164,28 +3833,113 @@ if (e.kind === 'boss' && !e.phase2 && e.hp <= e.maxHp * 0.5) {
     else { normalEnemyHit(s, s.atk); }
   }
 }
-
 function normalEnemyHit(e, atkValue) {
   const p = G.player;
-  let shield = p._barrierShield || 0;
   let dmg = Math.max(1, atkValue - p.def);
-  if (shield > 0) {
-    const absorbed = Math.min(shield, dmg);
-    dmg -= absorbed; p._barrierShield -= absorbed;
-    if (absorbed > 0) spawnPopup(G.px, G.py, `🔮-${absorbed}`, '#4488ff');
+
+  // バリアシールド
+  if (p._barrierShield > 0) {
+    const absorbed = Math.min(p._barrierShield, dmg);
+    p._barrierShield -= absorbed;
+    dmg -= absorbed;
+    if (absorbed > 0) {
+      spawnPopup(G.px, G.py, `🔮-${absorbed}`, '#4488ff');
+    }
+    if (dmg <= 0) {
+      log(`魔法障壁が${absorbed}ダメージを防いだ！`, 'good');
+      updateBattlePlayerBars();
+      updateUI();
+      return;
+    }
   }
+
+  // トゲ反射
   if (p.passives.thorns && dmg > 0) {
     const thornDmg = Math.floor(dmg * p.passives.thorns);
-    e.hp -= thornDmg;
-    if (thornDmg > 0) spawnPopup(e.x, e.y, `🌵${thornDmg}`, '#3ecc6f');
+    if (thornDmg > 0 && e && e.hp > 0) {
+      e.hp -= thornDmg;
+      spawnPopup(e.x, e.y, `🌵${thornDmg}`, '#3ecc6f');
+    }
   }
-  if (dmg > 0) {
-    p.hp -= dmg;
-    spawnPopup(G.px, G.py, `-${dmg}`, '#ff4444');
-    log(`${e.name}の攻撃！ ${dmg}ダメージ！`, 'combat');
-  }
- updateBattlePlayerBars();
+
+  p.hp -= dmg;
+  spawnPopup(G.px, G.py, `-${dmg}`, '#ff4444');
+  log(`${e.name}の攻撃！ ${dmg}ダメージ！`, 'combat');
+
+  updateBattlePlayerBars();
   updateUI();
+}
+
+function executeNormalEnemyAction(e) {
+  const p = G.player;
+  const intent = e.nextIntent || 'atk';
+
+  switch (intent) {
+    case 'slam':
+      normalEnemyHit(e, Math.floor(e.atk * 1.8));
+      log(`${e.name}の強撃！`, 'combat');
+      break;
+    case 'burn':
+      normalEnemyHit(e, e.atk);
+      e.burnTurns = (e.burnTurns || 0) + 2;
+      spawnPopup(e.x, e.y, '🔥燃焼！', '#ff6622');
+      log(`${e.name}が炎をまとった！燃焼2ターン付与！`, 'combat');
+      break;
+    case 'poison':
+      normalEnemyHit(e, Math.floor(e.atk * 0.5));
+      e._poisonStacks = Math.min((e._poisonStacks || 0) + 1, 3);
+      e._poisonPerTurn = e._poisonStacks * 4;
+      e._poisonTurns = 999;
+      spawnPopup(G.px, G.py, `🐍毒！`, '#3ecc6f');
+      log(`${e.name}が毒を付与した！`, 'combat');
+      break;
+    case 'buff':
+      if (!e.buffed) { e.atk = Math.floor(e.atk * 1.3); e.buffed = true; }
+      spawnPopup(e.x, e.y, '💪強化！', '#ff8c00');
+      log(`${e.name}が自己強化した！`, 'combat');
+      break;
+    case 'defend':
+      e._defendTurns = 1;
+      e._defendDef = e.def;
+      e.def = Math.floor(e.def * 2);
+      spawnPopup(e.x, e.y, '🛡防御！', '#4488ff');
+      log(`${e.name}が防御態勢をとった！DEF2倍！`, 'combat');
+      break;
+    case 'heal':
+      const heal = Math.min(Math.floor(e.maxHp * 0.15), e.maxHp - e.hp);
+      e.hp += heal;
+      spawnPopup(e.x, e.y, `+${heal}HP`, '#3ecc6f');
+      log(`${e.name}が回復した！HP+${heal}！`, 'combat');
+      updateEnemyBar();
+      break;
+    case 'regen':
+      e._regenTurns = 3;
+      e._regenVal = Math.floor(e.maxHp * 0.05);
+      spawnPopup(e.x, e.y, '🌿再生！', '#3ecc6f');
+      log(`${e.name}が再生を始めた！3ターンHP回復！`, 'combat');
+      break;
+    default:
+      normalEnemyHit(e, e.atk);
+      break;
+  }
+
+  // defend解除
+  if ((e._defendTurns || 0) > 0) {
+    e._defendTurns--;
+    if (e._defendTurns === 0 && e._defendDef !== undefined) {
+      e.def = e._defendDef;
+      e._defendDef = undefined;
+      log(`${e.name}の防御態勢が解けた`, 'entry');
+    }
+  }
+  // regen処理
+  if ((e._regenTurns || 0) > 0) {
+    const rv = e._regenVal || 0;
+    e.hp = Math.min(e.hp + rv, e.maxHp);
+    e._regenTurns--;
+    spawnPopup(e.x, e.y, `🌿+${rv}`, '#3ecc6f');
+    updateEnemyBar();
+  }
 }
 
 
@@ -2390,12 +4144,13 @@ function defeatEnemy(e) {
   const luckMult = 1 + (p.passives.luck || 0);
   const goldGain = Math.floor((e.gold + Math.floor(Math.random() * e.gold)) * luckMult);
 
-const expBoost = p.passives.expBoost || 1;
-p.exp += Math.floor(e.exp * expBoost); p.gold += goldGain; p.kills++;
+  const expBoost = p.passives.expBoost || 1;
+  p.exp += Math.floor(e.exp * expBoost); p.gold += goldGain; p.kills++;
 
   const tag = isBoss ? 'boss' : isElite ? 'elite' : 'good';
   log(`${e.name}を倒した！ EXP+${e.exp} G+${goldGain}`, tag);
   spawnPopup(e.x, e.y, isBoss ? '✦BOSS！' : '撃破！', isBoss ? '#ff8c00' : '#f5c842');
+  spawnDefeatParticles(e.x, e.y, isBoss ? '#ff8c00' : '#f5c842');
 
   if (G.playerClass.perk === 'regen') {
     p.hp = Math.min(p.hp + 3, p.maxHp);
@@ -2409,7 +4164,10 @@ p.exp += Math.floor(e.exp * expBoost); p.gold += goldGain; p.kills++;
   }
 
   G.enemies = G.enemies.filter(en => en !== e);
-  endCombat(); levelCheck(); renderAll(); updateUI();
+  endCombat();
+  levelCheck();
+  renderAll();
+  updateUI();
 }
 
 function getSkillChoices(p) {
@@ -2423,54 +4181,84 @@ function getSkillChoices(p) {
   }).map(s => s.id));
 
   const warriorLvSkills = [
-    { id: 'w_lv_hp_up', name: '戦士の肉体', icon: '💪', type: 'boost',
+    {
+      id: 'w_lv_hp_up', name: '戦士の肉体', icon: '💪', type: 'boost',
       desc: '最大HP+15、現在HPも+15',
-      apply: p => { p.maxHp += 15; p.hp = Math.min(p.hp + 15, p.maxHp); } },
-    { id: 'w_lv_atk_up', name: '剛腕', icon: '⚔', type: 'boost',
+      apply: p => { p.maxHp += 15; p.hp = Math.min(p.hp + 15, p.maxHp); }
+    },
+    {
+      id: 'w_lv_atk_up', name: '剛腕', icon: '⚔', type: 'boost',
       desc: 'ATK+5',
-      apply: p => { p.atk += 5; } },
-    { id: 'w_lv_def_up', name: '鉄壁の守り', icon: '🛡', type: 'boost',
+      apply: p => { p.atk += 5; }
+    },
+    {
+      id: 'w_lv_def_up', name: '鉄壁の守り', icon: '🛡', type: 'boost',
       desc: 'DEF+4',
-      apply: p => { p.def += 4; } },
-    { id: 'w_lv_crit', name: '会心の極意', icon: '⚡', type: 'passive',
+      apply: p => { p.def += 4; }
+    },
+    {
+      id: 'w_lv_crit', name: '会心の極意', icon: '⚡', type: 'passive',
       desc: '会心率+15%、会心ダメージ×0.5倍追加',
       apply: p => {
         p.passives.critRate = (p.passives.critRate || 0) + 0.15;
         p.passives.critMult = (p.passives.critMult || 2) + 0.5;
-      } },
-    { id: 'w_lv_leech', name: '血の渇望', icon: '🩸', type: 'passive',
+      }
+    },
+    {
+      id: 'w_lv_leech', name: '血の渇望', icon: '🩸', type: 'passive',
       desc: '通常攻撃ダメージの30%をHP回復',
-      apply: p => { p.passives.leech = (p.passives.leech || 0) + 0.3; } },
-    { id: 'w_lv_thorns', name: '返し刃', icon: '🌵', type: 'passive',
+      apply: p => { p.passives.leech = (p.passives.leech || 0) + 0.3; }
+    },
+    {
+      id: 'w_lv_thorns', name: '返し刃', icon: '🌵', type: 'passive',
       desc: '受けたダメージの25%を敵に反射',
-      apply: p => { p.passives.thorns = (p.passives.thorns || 0) + 0.25; } },
-    { id: 'w_lv_regen', name: '戦士の回復力', icon: '🌿', type: 'passive',
-      desc: '移動ごとにHP+2回復',
-      apply: p => { p.passives.regen = (p.passives.regen || 0) + 2; } },
-    { id: 'w_lv_pierce', name: '貫通撃', icon: '🏹', type: 'active',
+      apply: p => { p.passives.thorns = (p.passives.thorns || 0) + 0.25; }
+    },
+    {
+      id: 'w_lv_regen', name: '戦士の回復力', icon: '🌿', type: 'passive',
+      desc: '移動ごとにHP+2回復(50歩まで)',
+      apply: p => { p.passives.regen = (p.passives.regen || 0) + 2; }
+    },
+    {
+      id: 'w_lv_pierce', name: '貫通撃', icon: '🏹', type: 'active',
       desc: '通常攻撃が敵のDEFを無視する',
-      apply: p => { p.passives.pierce = true; } },
-    { id: 'w_lv_undying', name: '不屈', icon: '💀', type: 'passive',
+      apply: p => { p.passives.pierce = true; }
+    },
+    {
+      id: 'w_lv_undying', name: '不屈', icon: '💀', type: 'passive',
       desc: 'HP0になるとき20%の確率でHP1で耐える',
-      apply: p => { p.passives.undying = (p.passives.undying || 0) + 0.2; } },
-    { id: 'w_lv_heavy', name: '重厚', icon: '🗿', type: 'passive',
+      apply: p => { p.passives.undying = (p.passives.undying || 0) + 0.2; }
+    },
+    {
+      id: 'w_lv_heavy', name: '重厚', icon: '🗿', type: 'passive',
       desc: '通常攻撃にDEF×0.3の追加ダメージ',
-      apply: p => { p.passives.defToAtk = (p.passives.defToAtk || 0) + 0.3; } },
-    { id: 'w_lv_castle', name: '城壁', icon: '🏰', type: 'boost',
+      apply: p => { p.passives.defToAtk = (p.passives.defToAtk || 0) + 0.3; }
+    },
+    {
+      id: 'w_lv_castle', name: '城壁', icon: '🏰', type: 'boost',
       desc: 'DEF+6',
-      apply: p => { p.def += 6; } },
-    { id: 'w_lv_pressure', name: '重圧', icon: '⚖', type: 'passive',
+      apply: p => { p.def += 6; }
+    },
+    {
+      id: 'w_lv_pressure', name: '重圧', icon: '⚖', type: 'passive',
       desc: 'DEF参照ダメージを×1.5倍',
-      apply: p => { p.passives.defDmgBoost = (p.passives.defDmgBoost || 1) * 1.5; } },
-    { id: 'w_lv_steel_fist', name: '鋼の拳', icon: '🦾', type: 'passive',
+      apply: p => { p.passives.defDmgBoost = (p.passives.defDmgBoost || 1) * 1.5; }
+    },
+    {
+      id: 'w_lv_steel_fist', name: '鋼の拳', icon: '🦾', type: 'passive',
       desc: '通常攻撃のDEF加算率+0.2',
-      apply: p => { p.passives.defToAtk = (p.passives.defToAtk || 0) + 0.2; } },
-    { id: 'w_lv_fortify', name: '堅陣', icon: '⛩', type: 'passive',
+      apply: p => { p.passives.defToAtk = (p.passives.defToAtk || 0) + 0.2; }
+    },
+    {
+      id: 'w_lv_fortify', name: '堅陣', icon: '⛩', type: 'passive',
       desc: '被弾するたびにDEF÷4のHP回復',
-      apply: p => { p.passives.fortify = true; } },
-    { id: 'dark_heart', name: '魔剣士の心', icon: '🖤', type: 'special',
+      apply: p => { p.passives.fortify = true; }
+    },
+    {
+      id: 'dark_heart', name: '魔剣士の心', icon: '🖤', type: 'special',
       desc: '⚠ 戦士の固有スキルをすべて失い、魔剣士に覚醒する。闇の力が目覚める。',
-      apply: p => { /* 警告モーダルで処理 */ } },
+      apply: p => { /* 警告モーダルで処理 */ }
+    },
   ];
 
   let pool = [];
@@ -2483,8 +4271,8 @@ function getSkillChoices(p) {
       const generic = ALL_SKILLS.filter(s => !owned.has(s.id) && !s.onlyClass);
       pool = [...pool, ...generic];
     }
- } else if (classId === 'warrior') {
-   if (G.isDarkWarrior) {
+  } else if (classId === 'warrior') {
+    if (G.isDarkWarrior) {
       const darkWarriorSpecific = DARK_WARRIOR_LEVELUP_SKILLS.filter(s => !owned.has(s.id));
       const generic = ALL_SKILLS.filter(s => !owned.has(s.id) && !s.onlyClass);
       classSpecificIds = new Set(darkWarriorSpecific.map(s => s.id));
@@ -2626,8 +4414,8 @@ function acceptDarkHeart() {
   p.skillCommands = (p.skillCommands || []).filter(id => {
     const sc = SKILL_COMMANDS[id];
     return sc && !sc.availableFor?.includes('warrior') ||
-           ['iron_wall','shield_bash','kiai_tame','multi_slash','blood_awakening',
-            'armor_break','vampiric_slash','rage_burst','ultimate_slash'].indexOf(id) === -1;
+      ['iron_wall', 'shield_bash', 'kiai_tame', 'multi_slash', 'blood_awakening',
+        'armor_break', 'vampiric_slash', 'rage_burst', 'ultimate_slash'].indexOf(id) === -1;
   });
   p.classSkills = (p.classSkills || []).filter(id => !warriorTreeIds.has(id));
   p.skills = (p.skills || []).filter(s => !warriorTreeIds.has(s.id));
@@ -2637,7 +4425,7 @@ function acceptDarkHeart() {
   p.passives.darkHeart = true;
 
   // スキルツリーを魔剣士に切り替え
- G.pendingSkillChoices = null;
+  G.pendingSkillChoices = null;
   document.getElementById('skill-modal').classList.remove('active');
   G.isDarkWarrior = true;
 
@@ -2673,15 +4461,19 @@ function openChest(x, y) {
   if (roll < 0.3) {
     const wpnData = WEAPONS[Math.min(Math.floor(G.floor / 2), WEAPONS.length - 1)];
     const bonus = parseInt(wpnData.match(/\+(\d)/)?.[1] || 0);
-    p.equip.wpn = wpnData; p.equip.wpnBonus = bonus;
-    p.atk = 5 + bonus + (p.lv - 1) * 2;
+    const oldBonus = p.equip.wpnBonus || 0;
+    p.equip.wpn = wpnData;
+    p.equip.wpnBonus = bonus;
+    p.atk = p.atk - oldBonus + bonus;
     updateEquipDisplay();
     log(`宝箱！ ${wpnData} を入手！`, 'loot');
   } else if (roll < 0.55) {
     const armData = ARMORS[Math.min(Math.floor(G.floor / 2), ARMORS.length - 1)];
     const bonus = parseInt(armData.match(/\+(\d)/)?.[1] || 0);
-    p.equip.arm = armData; p.equip.armBonus = bonus;
-    p.def = 2 + bonus + Math.floor((p.lv - 1) / 2);
+    const oldBonus = p.equip.armBonus || 0;
+    p.equip.arm = armData;
+    p.equip.armBonus = bonus;
+    p.def = p.def - oldBonus + bonus;
     updateEquipDisplay();
     log(`宝箱！ ${armData} を入手！`, 'loot');
   } else if (roll < 0.7) {
@@ -2717,7 +4509,7 @@ function useItem(name) {
   if (idx < 0) return false;
   const item = G.player.items[idx];
   const p = G.player;
- if (item.type === 'heal') {
+  if (item.type === 'heal') {
     const boost = p.passives.itemBoost || 1;
     const heal = Math.min(Math.floor(item.val * boost), p.maxHp - p.hp);
     p.hp += heal;
@@ -2901,16 +4693,17 @@ function showModeSelect() {
 }
 
 function beginGame(mode) {
-  // ハードモードがロック中なら弾く
+  if (!selectedClass) return;
   if (mode === 'hard') {
     const cleared = JSON.parse(localStorage.getItem('dungeon_clears') || '[]');
     const hardUnlocked = cleared.some(c => c.mode === 'normal');
     if (!hardUnlocked) return;
   }
-  G.mode = mode;
+  G = { mode: mode };
   document.getElementById('class-select').classList.remove('active');
   startGame(selectedClass);
 }
+
 
 // ══════════════════════════════════════════════════════════
 //  INPUT
@@ -3003,30 +4796,39 @@ mapCanvas.addEventListener('touchend', e => {
 // ══════════════════════════════════════════════════════════
 const CLASS_SKILL_TREES = {
   warrior: [
-   {
-  id: 'w_iron_wall', name: '鉄壁', icon: '🛡', cost: 1, req: null,
-  desc: '3ターン間、被ダメ時にDEF÷4の反撃ダメージ（MP3消費）',
-  apply: p => {
-    if (!p.skillCommands) p.skillCommands = [];
-    if (!p.skillCommands.includes('iron_wall')) p.skillCommands.push('iron_wall');
-  }
-},
-   {
-  id: 'w_kiai_tame', name: '気合ため', icon: '🎯', cost: 1, req: null,
-  desc: '次の攻撃の会心ダメージ×1.5倍バフ（MP0消費）',
-  apply: p => {
-    if (!p.skillCommands) p.skillCommands = [];
-    if (!p.skillCommands.includes('kiai_tame')) p.skillCommands.push('kiai_tame');
-  }
-},
-{
-  id: 'w_shield_bash', name: 'シールドバッシュ', icon: '🛡', cost: 1, req: null,
-  desc: 'DEFをATKとして扱って攻撃（MP0消費）',
-  apply: p => {
-    if (!p.skillCommands) p.skillCommands = [];
-    if (!p.skillCommands.includes('shield_bash')) p.skillCommands.push('shield_bash');
-  }
-},
+    {
+      id: 'w_kyusho_tsuki', name: '急所突き', icon: '🎯', cost: 2, req: null,
+      desc: '会心率+50%でATK×0.7の攻撃（MP5消費）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('kyusho_tsuki')) p.skillCommands.push('kyusho_tsuki');
+      }
+    },
+
+    {
+      id: 'w_iron_wall', name: '鉄壁', icon: '🛡', cost: 1, req: null,
+      desc: '3ターン間、被ダメ時にDEF÷4の反撃ダメージ（MP3消費）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('iron_wall')) p.skillCommands.push('iron_wall');
+      }
+    },
+    {
+      id: 'w_kiai_tame', name: '気合ため', icon: '🎯', cost: 1, req: null,
+      desc: '次の攻撃の会心ダメージ×1.5倍バフ（MP0消費）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('kiai_tame')) p.skillCommands.push('kiai_tame');
+      }
+    },
+    {
+      id: 'w_shield_bash', name: 'シールドバッシュ', icon: '🛡', cost: 1, req: null,
+      desc: 'DEFをATKとして扱って攻撃（MP0消費）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('shield_bash')) p.skillCommands.push('shield_bash');
+      }
+    },
     {
       id: 'w_multi_slash', name: '乱れ切り', icon: '🌀', cost: 1, req: null,
       desc: 'ATK×0.75で1〜4回攻撃（MP5消費）',
@@ -3035,14 +4837,14 @@ const CLASS_SKILL_TREES = {
         if (!p.skillCommands.includes('multi_slash')) p.skillCommands.push('multi_slash');
       }
     },
-   {
-  id: 'w_blood_awakening', name: '血の覚醒', icon: '🔴', cost: 2, req: null,
-  desc: 'HP50%以下でATK+40%、HP25%以下でさらに+40%（MP2消費）',
-  apply: p => {
-    if (!p.skillCommands) p.skillCommands = [];
-    if (!p.skillCommands.includes('blood_awakening')) p.skillCommands.push('blood_awakening');
-  }
-},
+    {
+      id: 'w_blood_awakening', name: '血の覚醒', icon: '🔴', cost: 2, req: null,
+      desc: 'HP50%以下でATK+40%、HP25%以下でさらに+40%（MP2消費）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('blood_awakening')) p.skillCommands.push('blood_awakening');
+      }
+    },
     {
       id: 'w_armor_break', name: '鎧砕き', icon: '🔨', cost: 2, req: 'w_multi_slash',
       desc: '敵のDEFを3ターン間−4する（MP4消費）',
@@ -3060,13 +4862,13 @@ const CLASS_SKILL_TREES = {
       }
     },
     {
-  id: 'w_rage_burst', name: '怒りの爆発', icon: '💢', cost: 2, req: null,
-  desc: '怒りスタック×12ダメージ（被ダメごとスタック+1）（MP4消費）',
-  apply: p => {
-    if (!p.skillCommands) p.skillCommands = [];
-    if (!p.skillCommands.includes('rage_burst')) p.skillCommands.push('rage_burst');
-  }
-},
+      id: 'w_rage_burst', name: '怒りの爆発', icon: '💢', cost: 2, req: null,
+      desc: '怒りスタック×12ダメージ（被ダメごとスタック+1）（MP4消費）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('rage_burst')) p.skillCommands.push('rage_burst');
+      }
+    },
     {
       id: 'w_ultimate_slash', name: '究極切り', icon: '👑', cost: 4,
       req: '__all_warrior__',
@@ -3303,87 +5105,87 @@ const CLASS_SKILL_TREES = {
     },
   ],
   dark_warrior: [
-  {
-    id: 'dw_dark_slash', name: '闇斬り', icon: '🌑', cost: 1, req: null,
-    desc: 'HP5消費、ATK×1.8の闇ダメージ',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('dark_slash')) p.skillCommands.push('dark_slash');
-    }
-  },
-  {
-    id: 'dw_curse_slash', name: '呪縛斬り', icon: '⛓', cost: 1, req: null,
-    desc: 'HP6消費、ATK×1.5＋3ターン呪い（ATK-3・DEF-2）',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('curse_slash')) p.skillCommands.push('curse_slash');
-    }
-  },
-  {
-    id: 'dw_soul_devour', name: '魂喰い', icon: '💜', cost: 2, req: 'dw_dark_slash',
-    desc: 'HP8消費、ATK×2.5、与ダメ50%HP回収',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('soul_devour')) p.skillCommands.push('soul_devour');
-    }
-  },
-  {
-    id: 'dw_dark_wave', name: '暗黒波動', icon: '🌊', cost: 2, req: 'dw_dark_slash',
-    desc: 'HP10消費、ATK×3のDEF無視ダメージ',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('dark_wave')) p.skillCommands.push('dark_wave');
-    }
-  },
-  {
-    id: 'dw_dark_bind', name: '闇縛り', icon: '🕸', cost: 2, req: 'dw_curse_slash',
-    desc: 'HP4消費、敵を3ターン行動不能',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('dark_bind')) p.skillCommands.push('dark_bind');
-    }
-  },
-  {
-    id: 'dw_fear_mark', name: '恐怖の刻印', icon: '😱', cost: 2, req: 'dw_curse_slash',
-    desc: 'HP4+MP4消費、敵のATKを3ターン-50%',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('fear_mark')) p.skillCommands.push('fear_mark');
-    }
-  },
-  {
-    id: 'dw_dark_curse', name: '暗黒呪縛', icon: '🌀', cost: 2, req: 'dw_dark_wave',
-    desc: 'HP6消費、毎ターン敵HP-8を3ターン継続',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('dark_curse')) p.skillCommands.push('dark_curse');
-    }
-  },
-  {
-    id: 'dw_turbulence', name: '乱気流', icon: '🌪', cost: 3, req: 'dw_dark_wave',
-    desc: 'HP15消費、ATK×0.7で3〜6回攻撃',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('turbulence')) p.skillCommands.push('turbulence');
-    }
-  },
-  {
-    id: 'dw_kill_strike', name: 'キル', icon: '💥', cost: 3, req: 'dw_dark_bind',
-    desc: 'HP10消費、通常50%/エリート25%で即死（ボス無効）',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('kill_strike')) p.skillCommands.push('kill_strike');
-    }
-  },
-  {
-    id: 'dw_soul_release', name: '魂の解放', icon: '👁', cost: 4, req: '__all_dark_warrior__',
-    desc: '【全スキル解放】HP30%以下でHP15消費、ATK×5の超大ダメージ',
-    apply: p => {
-      if (!p.skillCommands) p.skillCommands = [];
-      if (!p.skillCommands.includes('soul_release')) p.skillCommands.push('soul_release');
-    }
-  },
-],
+    {
+      id: 'dw_dark_slash', name: '闇斬り', icon: '🌑', cost: 1, req: null,
+      desc: 'HP5消費、ATK×1.8の闇ダメージ',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('dark_slash')) p.skillCommands.push('dark_slash');
+      }
+    },
+    {
+      id: 'dw_curse_slash', name: '呪縛斬り', icon: '⛓', cost: 1, req: null,
+      desc: 'HP6消費、ATK×1.5＋3ターン呪い（ATK-3・DEF-2）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('curse_slash')) p.skillCommands.push('curse_slash');
+      }
+    },
+    {
+      id: 'dw_soul_devour', name: '魂喰い', icon: '💜', cost: 2, req: 'dw_dark_slash',
+      desc: 'HP8消費、ATK×2.5、与ダメ50%HP回収',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('soul_devour')) p.skillCommands.push('soul_devour');
+      }
+    },
+    {
+      id: 'dw_dark_wave', name: '暗黒波動', icon: '🌊', cost: 2, req: 'dw_dark_slash',
+      desc: 'HP10消費、ATK×3のDEF無視ダメージ',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('dark_wave')) p.skillCommands.push('dark_wave');
+      }
+    },
+    {
+      id: 'dw_dark_bind', name: '闇縛り', icon: '🕸', cost: 2, req: 'dw_curse_slash',
+      desc: 'HP4消費、敵を3ターン行動不能',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('dark_bind')) p.skillCommands.push('dark_bind');
+      }
+    },
+    {
+      id: 'dw_fear_mark', name: '恐怖の刻印', icon: '😱', cost: 2, req: 'dw_curse_slash',
+      desc: 'HP4+MP4消費、敵のATKを3ターン-50%',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('fear_mark')) p.skillCommands.push('fear_mark');
+      }
+    },
+    {
+      id: 'dw_dark_curse', name: '暗黒呪縛', icon: '🌀', cost: 2, req: 'dw_dark_wave',
+      desc: 'HP6消費、毎ターン敵HP-8を3ターン継続',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('dark_curse')) p.skillCommands.push('dark_curse');
+      }
+    },
+    {
+      id: 'dw_turbulence', name: '乱気流', icon: '🌪', cost: 3, req: 'dw_dark_wave',
+      desc: 'HP15消費、ATK×0.7で3〜6回攻撃',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('turbulence')) p.skillCommands.push('turbulence');
+      }
+    },
+    {
+      id: 'dw_kill_strike', name: 'キル', icon: '💥', cost: 3, req: 'dw_dark_bind',
+      desc: 'HP10消費、通常50%/エリート25%で即死（ボス無効）',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('kill_strike')) p.skillCommands.push('kill_strike');
+      }
+    },
+    {
+      id: 'dw_soul_release', name: '魂の解放', icon: '👁', cost: 4, req: '__all_dark_warrior__',
+      desc: '【全スキル解放】HP30%以下でHP15消費、ATK×5の超大ダメージ',
+      apply: p => {
+        if (!p.skillCommands) p.skillCommands = [];
+        if (!p.skillCommands.includes('soul_release')) p.skillCommands.push('soul_release');
+      }
+    },
+  ],
 
 };
 
@@ -3498,10 +5300,10 @@ function buyClassSkill(skillId) {
   const owned = new Set([...classSkills, ...ownedCmds]);
   if (owned.has(skillId)) return;
   if (skill.req === '__all_warrior__' || skill.req === '__all_rogue__' || skill.req === '__all_cleric__' || skill.req === '__all_dark_warrior__') {
-    const treeKey = skill.req === '__all_warrior__' ? 'warrior' 
-  : skill.req === '__all_rogue__' ? 'rogue' 
-  : skill.req === '__all_cleric__' ? 'cleric' 
-  : 'dark_warrior';
+    const treeKey = skill.req === '__all_warrior__' ? 'warrior'
+      : skill.req === '__all_rogue__' ? 'rogue'
+        : skill.req === '__all_cleric__' ? 'cleric'
+          : 'dark_warrior';
 
     const tree = CLASS_SKILL_TREES[treeKey];
     const allExcept = tree.filter(s => s.req !== '__all_warrior__' && s.req !== '__all_rogue__');
@@ -3659,11 +5461,11 @@ function gameWin() {
   endCombat();
   const p = G.player;
 
-   // クリアデータを保存
+  // クリアデータを保存
   const clearData = {
     id: Date.now(),
     date: new Date().toLocaleDateString('ja-JP'),
-    mode: G.mode || 'normal', 
+    mode: G.mode || 'normal',
     className: G.playerClass.name,
     classIcon: G.playerClass.icon,
     floor: G.floor,
@@ -3675,7 +5477,7 @@ function gameWin() {
       ...p.skills.map(s => ({ name: s.name, icon: s.icon, type: s.type })),
       ...(p.classSkills || []).map(id => {
         const allTrees = [...CLASS_SKILL_TREES.warrior, ...CLASS_SKILL_TREES.dark_warrior,
-          ...CLASS_SKILL_TREES.mage, ...CLASS_SKILL_TREES.rogue, ...CLASS_SKILL_TREES.cleric];
+        ...CLASS_SKILL_TREES.mage, ...CLASS_SKILL_TREES.rogue, ...CLASS_SKILL_TREES.cleric];
         const s = allTrees.find(t => t.id === id);
         return s ? { name: s.name, icon: s.icon, type: 'class' } : null;
       }).filter(Boolean),
@@ -3709,21 +5511,19 @@ function gameWin() {
   defeatEnemy = function (e) {
     _orig(e);
 
-
-    // ゲームクリア判定（最終ボス）
     if (e.kind === 'boss') {
-  const isHard = G.mode === 'hard';
-  const maxFloor = isHard ? 25 : 20;
-  const bossArr = isHard ? HARD_BOSS_TYPES : BOSS_TYPES;
-  const bossIdx = Math.min(Math.floor(G.floor / 5) - 1, bossArr.length - 1);
-  if (bossIdx >= bossArr.length - 1) {
-    setTimeout(gameWin, 700);
-    return;
-  }
-}
+      const isHard = G.mode === 'hard';
+      const bossArr = isHard ? HARD_BOSS_TYPES : BOSS_TYPES;
+      const bossIdx = Math.min(Math.floor(G.floor / 5) - 1, bossArr.length - 1);
+      if (bossIdx >= bossArr.length - 1) {
+        setTimeout(gameWin, 700);
+        return;
+      }
+    }
     updateExpBar();
   };
 })();
+
 
 // ══════════════════════════════════════════════════════════
 //  normalEnemyHit に 回避・神の加護・マナシールド・カウンターをパッチ
@@ -3766,35 +5566,35 @@ function gameWin() {
 
     const counterRate = p.passives.counter || 0;
 
-  // 怒りスタック蓄積（戦士のみ）
-if (Object.keys(CLASSES).find(k => CLASSES[k] === G.playerClass) === 'warrior') {
-  p.passives._rageStacks = (p.passives._rageStacks || 0) + 1;
-  if (p.passives._rageStacks > 10) p.passives._rageStacks = 10;
-}
+    // 怒りスタック蓄積（戦士のみ）
+    if (Object.keys(CLASSES).find(k => CLASSES[k] === G.playerClass) === 'warrior') {
+      p.passives._rageStacks = (p.passives._rageStacks || 0) + 1;
+      if (p.passives._rageStacks > 10) p.passives._rageStacks = 10;
+    }
 
-// 鉄壁反撃
-if ((p.passives._ironWallTurns || 0) > 0) {
-  const boost = p.passives.defDmgBoost || 1;
-  let counterDmg = Math.max(1, Math.floor(p.def * boost));
-  if (p.passives.counterWill) {
-    counterDmg += Math.floor(p.atk * p.passives.counterWill);
-  }
-  e.hp -= counterDmg;
-  spawnPopup(e.x, e.y, `🛡${counterDmg}`, '#4488ff');
-  log(`鉄壁反撃！ ${e.name}に${counterDmg}ダメージ！`, 'good');
-  if (e.hp <= 0 && G.inCombat) { defeatEnemy(e); return; }
-  updateEnemyBar();
-}
-// 堅陣：被弾時HP回復
-if (p.passives.fortify) {
-  const healAmt = Math.max(1, Math.floor(p.def / 4));
-  p.hp = Math.min(p.hp + healAmt, p.maxHp);
-  spawnPopup(G.px, G.py, `⛩+${healAmt}HP`, '#4488ff');
-}
+    // 鉄壁反撃
+    if ((p.passives._ironWallTurns || 0) > 0) {
+      const boost = p.passives.defDmgBoost || 1;
+      let counterDmg = Math.max(1, Math.floor(p.def * boost));
+      if (p.passives.counterWill) {
+        counterDmg += Math.floor(p.atk * p.passives.counterWill);
+      }
+      e.hp -= counterDmg;
+      spawnPopup(e.x, e.y, `🛡${counterDmg}`, '#4488ff');
+      log(`鉄壁反撃！ ${e.name}に${counterDmg}ダメージ！`, 'good');
+      if (e.hp <= 0 && G.inCombat) { defeatEnemy(e); return; }
+      updateEnemyBar();
+    }
+    // 堅陣：被弾時HP回復
+    if (p.passives.fortify) {
+      const healAmt = Math.max(1, Math.floor(p.def / 4));
+      p.hp = Math.min(p.hp + healAmt, p.maxHp);
+      spawnPopup(G.px, G.py, `⛩+${healAmt}HP`, '#4488ff');
+    }
 
 
 
-  // 奇跡・神の裁き復活チェック用に呼び出し前HPを記録
+    // 奇跡・神の裁き復活チェック用に呼び出し前HPを記録
     const hpBefore = p.hp;
     _orig(e, atkValue);
 
@@ -3868,23 +5668,23 @@ if (p.passives.fortify) {
     }
 
     // 鉄壁ターン管理
-if ((p.passives._ironWallTurns || 0) > 0) {
-  p.passives._ironWallTurns--;
-  if (p.passives._ironWallTurns === 0) {
-    log('鉄壁が解除された', 'entry');
-  }
-}
-// 血の覚醒ターン管理
-if ((p.passives._bloodAwakeningTurns || 0) > 0) {
-  p.passives._bloodAwakeningTurns--;
-  if (p.passives._bloodAwakeningTurns === 0 && p.passives._bloodAwakeningBonus) {
-    p.atk = Math.floor(p.atk / (1 + p.passives._bloodAwakeningBonus));
-    p.passives._bloodAwakeningBonus = 0;
-    log('血の覚醒が切れた…', 'entry');
-  }
-}
-   
-    
+    if ((p.passives._ironWallTurns || 0) > 0) {
+      p.passives._ironWallTurns--;
+      if (p.passives._ironWallTurns === 0) {
+        log('鉄壁が解除された', 'entry');
+      }
+    }
+    // 血の覚醒ターン管理
+    if ((p.passives._bloodAwakeningTurns || 0) > 0) {
+      p.passives._bloodAwakeningTurns--;
+      if (p.passives._bloodAwakeningTurns === 0 && p.passives._bloodAwakeningBonus) {
+        p.atk = Math.floor(p.atk / (1 + p.passives._bloodAwakeningBonus));
+        p.passives._bloodAwakeningBonus = 0;
+        log('血の覚醒が切れた…', 'entry');
+      }
+    }
+
+
 
     // 時空切りカウントダウン
     if (e._pendingTimeSlash > 0) {
@@ -3908,41 +5708,41 @@ if ((p.passives._bloodAwakeningTurns || 0) > 0) {
       }
     }
     // 呪いターン管理
-if ((e._curseTurns || 0) > 0) {
-  e._curseTurns--;
-  if (e._curseTurns === 0) {
-    e.atk += (e._curseAtkReduce || 0);
-    e.def += (e._curseDefReduce || 0);
-    e._curseAtkReduce = 0;
-    e._curseDefReduce = 0;
-    log(`${e.name}の呪いが解けた`, 'entry');
-  }
-}
-// 恐怖の刻印ターン管理
-if ((e._fearTurns || 0) > 0) {
-  e._fearTurns--;
-  if (e._fearTurns === 0 && e._fearAtkOrig) {
-    e.atk = e._fearAtkOrig;
-    e._fearAtkOrig = 0;
-    log(`${e.name}の恐怖が消えた…ATKが元に戻った`, 'entry');
-  }
-}
-// 暗黒呪縛ダメージ
-if ((e._darkCurseTurns || 0) > 0) {
-  const cd = e._darkCurseDmg || 8;
-  e.hp -= cd;
-  e._darkCurseTurns--;
-  spawnPopup(e.x, e.y, `🌀-${cd}`, '#4400cc');
-  log(`暗黒呪縛！ ${e.name}に${cd}ダメージ！（残り${e._darkCurseTurns}ターン）`, 'combat');
-  if (e.hp <= 0 && G.inCombat) { defeatEnemy(e); return; }
-  updateEnemyBar();
-}
+    if ((e._curseTurns || 0) > 0) {
+      e._curseTurns--;
+      if (e._curseTurns === 0) {
+        e.atk += (e._curseAtkReduce || 0);
+        e.def += (e._curseDefReduce || 0);
+        e._curseAtkReduce = 0;
+        e._curseDefReduce = 0;
+        log(`${e.name}の呪いが解けた`, 'entry');
+      }
+    }
+    // 恐怖の刻印ターン管理
+    if ((e._fearTurns || 0) > 0) {
+      e._fearTurns--;
+      if (e._fearTurns === 0 && e._fearAtkOrig) {
+        e.atk = e._fearAtkOrig;
+        e._fearAtkOrig = 0;
+        log(`${e.name}の恐怖が消えた…ATKが元に戻った`, 'entry');
+      }
+    }
+    // 暗黒呪縛ダメージ
+    if ((e._darkCurseTurns || 0) > 0) {
+      const cd = e._darkCurseDmg || 8;
+      e.hp -= cd;
+      e._darkCurseTurns--;
+      spawnPopup(e.x, e.y, `🌀-${cd}`, '#4400cc');
+      log(`暗黒呪縛！ ${e.name}に${cd}ダメージ！（残り${e._darkCurseTurns}ターン）`, 'combat');
+      if (e.hp <= 0 && G.inCombat) { defeatEnemy(e); return; }
+      updateEnemyBar();
+    }
 
-// 魂縛りターン管理
-if ((e._healSeal || 0) > 0) {
-  e._healSeal--;
-  if (e._healSeal === 0) log(`${e.name}の回復封印が解けた`, 'entry');
-}
+    // 魂縛りターン管理
+    if ((e._healSeal || 0) > 0) {
+      e._healSeal--;
+      if (e._healSeal === 0) log(`${e.name}の回復封印が解けた`, 'entry');
+    }
 
     // 究極切りATK2倍バフ管理
     if (p.passives._ultimateBuffTurns > 0) {
@@ -4003,22 +5803,22 @@ if ((e._healSeal || 0) > 0) {
       updateEnemyBar();
     }
     // スキル弱体ターン管理
-if ((p.passives._skillWeakenTurns || 0) > 0) {
-  p.passives._skillWeakenTurns--;
-  if (p.passives._skillWeakenTurns === 0) {
-    p.passives._skillWeakened = false;
-    log('スキル弱体が解除された', 'entry');
-  }
-}
-// DEF低下ターン管理
-if ((p.passives._defDownTurns || 0) > 0) {
-  p.passives._defDownTurns--;
-  if (p.passives._defDownTurns === 0 && p.passives._defDown) {
-    p.def += p.passives._defDown;
-    p.passives._defDown = 0;
-    log('DEF低下が解除された', 'entry');
-  }
-}
+    if ((p.passives._skillWeakenTurns || 0) > 0) {
+      p.passives._skillWeakenTurns--;
+      if (p.passives._skillWeakenTurns === 0) {
+        p.passives._skillWeakened = false;
+        log('スキル弱体が解除された', 'entry');
+      }
+    }
+    // DEF低下ターン管理
+    if ((p.passives._defDownTurns || 0) > 0) {
+      p.passives._defDownTurns--;
+      if (p.passives._defDownTurns === 0 && p.passives._defDown) {
+        p.def += p.passives._defDown;
+        p.passives._defDown = 0;
+        log('DEF低下が解除された', 'entry');
+      }
+    }
     // 足払いターン管理
     if ((e._legSweepTurns || 0) > 0) {
       e._legSweepTurns--;
@@ -4390,8 +6190,8 @@ function executeSkillSubMenu() {
     return;
   }
   p.mp -= totalCost;
-// スキル弱体適用
-const skillBoostMult = p.passives._skillWeakened ? 0.5 : 1;
+  // スキル弱体適用
+  const skillBoostMult = p.passives._skillWeakened ? 0.5 : 1;
   // magBoost適用（実行前に一時的にATKを底上げする形で反映）
   const boost = (p.passives.magBoost || 1) * skillBoostMult;
   const origAtk = p.atk;
@@ -4399,6 +6199,16 @@ const skillBoostMult = p.passives._skillWeakened ? 0.5 : 1;
 
   const dmg = skill.execute(p, G.currentEnemy);
   p.atk = origAtk; // ATKを元に戻す
+
+  if (skill.mpCost >= 4) {
+  const flashColor =
+    skill.id.includes('fire')  ? '#ff4400' :
+    skill.id.includes('ice')   ? '#88ccff' :
+    skill.id.includes('holy') || skill.id.includes('divine') ? '#f5c842' :
+    skill.id.includes('dark') || skill.id.includes('soul')   ? '#8844ff' :
+    '#b06aff';
+  triggerSkillFlash(flashColor);
+}
 
   // magDrain適用
   if (p.passives.magDrain && dmg > 0) {
@@ -4474,7 +6284,7 @@ document.addEventListener('keydown', function (e) {
     if (skillSubMenuActive) return;
     _origMove(dx, dy);
     // ハードモードのダメージ床
-    if (G.mode === 'hard' && G.map && G.player && !G.inCombat) {
+    if (G.mode === 'hard' && G.floor >= 10 && G.map && G.player && !G.inCombat) {
       const tile = G.map[G.py][G.px];
       if (tile === TILE_FLOOR) {
         // 部屋の中かどうか判定
@@ -4559,4 +6369,57 @@ function closeLibraryDetail() {
   document.getElementById('library-detail').style.display = 'none';
   document.getElementById('library-list').style.display = 'block';
 }
+function switchRTab(tab) {
+  document.getElementById('rtab-equip').style.display = tab === 'equip' ? 'block' : 'none';
+  document.getElementById('rtab-skills').style.display = tab === 'skills' ? 'block' : 'none';
+  document.getElementById('rtab-items').style.display = tab === 'items' ? 'block' : 'none';
+  document.querySelectorAll('.rtab').forEach((el, i) => {
+    el.classList.toggle('active', ['equip', 'skills', 'items'][i] === tab);
+  });
+}
 
+let combatLogOpen = false;
+
+function toggleCombatLog() {
+  combatLogOpen = !combatLogOpen;
+  const logBox = document.getElementById('log-box');
+  const arrow = document.getElementById('combat-log-arrow');
+  if (logBox) logBox.classList.toggle('combat-overlay', combatLogOpen);
+  if (arrow) arrow.textContent = combatLogOpen ? '▼' : '▲';
+  if (combatLogOpen && logBox) logBox.scrollTop = logBox.scrollHeight;
+}
+
+(function () {
+  const _orig = startCombat;
+  startCombat = function (...args) {
+    _orig(...args);
+    const toggle = document.getElementById('combat-log-toggle');
+    const logBox = document.getElementById('log-box');
+    const arrow = document.getElementById('combat-log-arrow');
+    if (toggle) toggle.classList.add('active');
+    combatLogOpen = false;
+    if (logBox) logBox.classList.remove('combat-overlay');
+    if (arrow) arrow.textContent = '▲';
+  };
+})();
+
+(function () {
+  const _orig = endCombat;
+  endCombat = function (...args) {
+    _orig(...args);
+    const toggle = document.getElementById('combat-log-toggle');
+    const logBox = document.getElementById('log-box');
+    const arrow = document.getElementById('combat-log-arrow');
+    if (logBox) logBox.classList.remove('combat-overlay');
+    if (toggle) toggle.classList.remove('active');
+    if (arrow) arrow.textContent = '▲';
+    combatLogOpen = false;
+  };
+})();
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    if (G.inCombat) toggleCombatLog();
+  }
+});

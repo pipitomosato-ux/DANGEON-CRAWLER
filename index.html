@@ -187,49 +187,63 @@
         </div>
       </div>
     </div>
+<!-- タブUI -->
+<div id="right-tabs">
+  <button class="rtab active" onclick="switchRTab('equip')">装備</button>
+  <button class="rtab" onclick="switchRTab('skills')">スキル</button>
+  <button class="rtab" onclick="switchRTab('items')">アイテム</button>
+</div>
 
-    <!-- EQUIPMENT -->
-    <div class="panel">
-      <div class="panel-title">▶ EQUIP</div>
-      <div class="equip-slot">
-        <span class="slot-label">⚔WPN</span>
-        <div class="slot-detail">
-          <span class="slot-val empty" id="eq-wpn">なし</span>
-          <span class="slot-bonus" id="eq-wpn-bonus"></span>
-        </div>
-      </div>
-      <div class="equip-slot">
-        <span class="slot-label">🛡ARM</span>
-        <div class="slot-detail">
-          <span class="slot-val empty" id="eq-arm">なし</span>
-          <span class="slot-bonus" id="eq-arm-bonus"></span>
-        </div>
-      </div>
-      <div class="equip-slot">
-        <span class="slot-label">💍ACC</span>
-        <div class="slot-detail">
-          <span class="slot-val empty" id="eq-acc">なし</span>
-          <span class="slot-bonus" id="eq-acc-bonus"></span>
-        </div>
-      </div>
+<div class="panel" id="rtab-equip">
+  <div class="panel-title">▶ EQUIP</div>
+  <div class="equip-slot">
+    <span class="slot-label">⚔WPN</span>
+    <div class="slot-detail">
+      <span class="slot-val empty" id="eq-wpn">なし</span>
+      <span class="slot-bonus" id="eq-wpn-bonus"></span>
     </div>
-
-    <!-- ACQUIRED SKILLS -->
-    <div class="panel">
-      <div class="panel-title">▶ SKILLS</div>
-      <div id="skill-list"><span style="color:#444;font-size:7px">まだなし</span></div>
+  </div>
+  <div class="equip-slot">
+    <span class="slot-label">🛡ARM</span>
+    <div class="slot-detail">
+      <span class="slot-val empty" id="eq-arm">なし</span>
+      <span class="slot-bonus" id="eq-arm-bonus"></span>
     </div>
-
-    <!-- ITEMS -->
-    <div class="panel">
-      <div class="panel-title">▶ ITEMS</div>
-      <div id="item-list"><span style="color:#444">アイテムなし</span></div>
+  </div>
+  <div class="equip-slot">
+    <span class="slot-label">💍ACC</span>
+    <div class="slot-detail">
+      <span class="slot-val empty" id="eq-acc">なし</span>
+      <span class="slot-bonus" id="eq-acc-bonus"></span>
     </div>
   </div>
 </div>
 
+<div class="panel" id="rtab-skills" style="display:none">
+  <div class="panel-title">▶ SKILLS</div>
+  <div id="skill-list"><span style="color:#444;font-size:7px">まだなし</span></div>
+</div>
+
+<div class="panel" id="rtab-items" style="display:none">
+  <div class="panel-title">▶ ITEMS</div>
+  <div id="item-list"><span style="color:#444">アイテムなし</span></div>
+</div>
+
+  </div>
+</div>
+
+<div id="combat-log-toggle" onclick="toggleCombatLog()">
+  📜 ログ <span id="combat-log-arrow">▲</span>
+</div>
+
 <!-- ═══ COMBAT PANEL ═══ -->
 <div id="combat-panel">
+<div id="combat-log-toggle" onclick="toggleCombatLog()">
+  📜 ログ <span id="combat-log-arrow">▲</span>
+</div>
+<div id="combat-log-drawer">
+  <div id="combat-log-inner"></div>
+</div>
   <div id="battle-enemy-area">
     <div id="enemy-sprite-box">
       <canvas id="enemy-sprite-canvas" width="96" height="96"></canvas>
@@ -262,18 +276,18 @@
       </div>
     </div>
 
-    <!-- 2×2 コマンドグリッド -->
+<!-- 2×2 コマンドグリッド -->
     <div id="battle-commands">
-      <div class="battle-command selected" data-cmd="atk" data-row="0" data-col="0">
+      <div class="battle-command selected" data-cmd="atk" onclick="clickCombatCmd(0)">
         <span class="bcmd-arrow">▶</span><span class="bcmd-text">たたかう</span>
       </div>
-      <div class="battle-command" data-cmd="mag" data-row="0" data-col="1">
-      <span class="bcmd-text">スキル</span>
+      <div class="battle-command" data-cmd="mag" onclick="clickCombatCmd(1)">
+        <span class="bcmd-arrow">▶</span><span class="bcmd-text">スキル</span>
       </div>
-      <div class="battle-command" data-cmd="itm" data-row="1" data-col="0">
+      <div class="battle-command" data-cmd="itm" onclick="clickCombatCmd(2)">
         <span class="bcmd-arrow">▶</span><span class="bcmd-text">アイテム</span>
       </div>
-      <div class="battle-command" data-cmd="run" data-row="1" data-col="1">
+      <div class="battle-command" data-cmd="run" onclick="clickCombatCmd(3)">
         <span class="bcmd-arrow">▶</span><span class="bcmd-text">にげる</span>
       </div>
     </div>
@@ -284,15 +298,11 @@
     </div>
 
     <div id="battle-hint">↑↓←→ 選択 &nbsp; F/Enter 決定</div>
-  </div>
-</div>
 
-<!-- アイテムサブメニュー -->
-<div id="item-submenu">
-  <div id="item-submenu-title">🧪 アイテムを使う [↑↓選択・Enter決定・X/Escで戻る]</div>
-</div>
+  </div><!-- ← #battle-command-area 閉じ -->
+</div><!-- ← #combat-panel 閉じ -->
 
-<div id="battle-hint">↑↓←→ 選択 &nbsp; F/Enter 決定</div>
+
 
 <!-- WIN OVERLAY -->
 <div id="win-overlay">

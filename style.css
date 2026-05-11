@@ -86,17 +86,28 @@ body {
   border: 2px solid var(--border);
   background: #050508;
   line-height: 0;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
 }
 
 #map-container canvas {
   display: block;
   width: 100%;
+  height: auto;
+}
+
+#map {
+  position: relative;
+  z-index: 1;
 }
 
 #popup-canvas {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
 }
 
 /* ── Log ─── */
@@ -174,10 +185,29 @@ body {
 }
 
 .bar-track {
-  height: 8px;
+  height: 14px;
   background: #1a1a22;
   border: 1px solid var(--border);
   position: relative;
+  border-radius: 2px;
+}
+.bar-fill.hp {
+  background: linear-gradient(90deg, #c02020, #e84040);
+  transition: width 0.3s ease;
+}
+.bar-fill.mp {
+  background: linear-gradient(90deg, #2255cc, #4488ff);
+  transition: width 0.3s ease;
+}
+.bar-text {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 7px;
+  color: var(--white);
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 #000;
 }
 
 .bar-fill {
@@ -205,18 +235,21 @@ body {
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  font-size: 7px;
+  gap: 4px;
+  font-size: 6px;
   margin-top: 6px;
+}
+.stat-item span {
+  color: var(--white);
+  font-size: 10px;
+  display: block;
+  margin-top: 1px;
 }
 
 .stat-item {
   color: var(--dim);
 }
 
-.stat-item span {
-  color: var(--white);
-}
 
 /* ── Equipment ─── */
 .equip-slot {
@@ -1052,13 +1085,10 @@ body {
   z-index: 50;
   flex-direction: row;
   align-items: stretch;
-  transform: translateY(100%);
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #combat-panel.active {
   display: flex;
-  transform: translateY(0);
 }
 
 #combat-panel.boss-fight {
@@ -1070,6 +1100,7 @@ body {
   border-top-color: #ff66aa;
   background: #0e0012;
 }
+
 
 /* 左：敵エリア */
 #battle-enemy-area {
@@ -1134,20 +1165,27 @@ body {
 #enemy-intent {
   font-size: 7px;
   color: var(--dim);
-  min-height: 12px;
+  min-height: 14px;
   letter-spacing: 0.5px;
+  padding: 2px 4px;
+  border-left: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  line-height: 1.8;
 }
 
 #enemy-intent.intent-atk {
   color: #ff7777;
+  border-left-color: #ff7777;
 }
 
 #enemy-intent.intent-buff {
   color: var(--purple);
+  border-left-color: var(--purple);
 }
 
 #enemy-intent.intent-heal {
   color: var(--green);
+  border-left-color: var(--green);
 }
 
 #enemy-hp-label-row {
@@ -1271,13 +1309,19 @@ body {
 .battle-command {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 5px 8px;
+  padding: 10px 8px;
   background: #0e0e1c;
   border: 1px solid #2a2a44;
   cursor: pointer;
   transition: background 0.08s;
   line-height: 1;
+  border-radius: 2px;
+}
+.bcmd-text {
+  font-size: 10px;
+  color: var(--dim);
 }
 
 .battle-command:hover {
@@ -1302,10 +1346,6 @@ body {
   color: var(--gold);
 }
 
-.bcmd-text {
-  font-size: 8px;
-  color: var(--dim);
-}
 
 .battle-command.selected .bcmd-text {
   color: var(--white);
@@ -2127,6 +2167,8 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  width: 100%;
+  height: 100%;
   z-index: 5;
 }
 
@@ -2308,4 +2350,152 @@ body {
   font-size: 7px;
   color: var(--dim);
   line-height: 2;
+}
+
+#right-tabs {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+.rtab {
+  flex: 1;
+  padding: 5px 2px;
+  background: #0e0e1c;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.rtab.active {
+  background: #1a1a36;
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.rtab:hover:not(.active) {
+  background: #14142a;
+  color: var(--white);
+}
+
+#combat-log-toggle {
+  display: none;
+  position: fixed;
+  bottom: calc(var(--battle-h));
+  left: 0;
+  width: 100%;
+  background: #0e0e1c;
+  border-top: 2px solid #3a3a5a;
+  border-bottom: 1px solid #2a2a44;
+  padding: 5px 12px;
+  font-size: 7px;
+  color: var(--dim);
+  cursor: pointer;
+  z-index: 49;
+  letter-spacing: 2px;
+  user-select: none;
+  transition: color 0.1s;
+}
+
+#combat-log-toggle:hover {
+  color: var(--gold);
+}
+
+#combat-panel.active ~ #combat-log-toggle,
+#combat-log-toggle.active {
+  display: block;
+}
+
+#combat-log-drawer {
+  display: none;
+  position: fixed;
+  bottom: calc(var(--battle-h) + 22px);
+  left: 0;
+  width: 100%;
+  max-height: 120px;
+  background: #08080f;
+  border-top: 2px solid #3a3a5a;
+  z-index: 48;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+#combat-log-drawer.open {
+  display: block;
+}
+
+#combat-log-inner {
+  padding: 6px 10px;
+  font-size: 7px;
+  line-height: 2;
+  overflow-y: auto;
+  max-height: 120px;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+#combat-log-inner .entry { color: var(--dim); }
+#combat-log-inner .entry.combat { color: var(--red); }
+#combat-log-inner .entry.good { color: var(--green); }
+#combat-log-inner .entry.warn { color: var(--purple); }
+#combat-log-inner .entry.boss { color: var(--orange); }
+#combat-log-inner .entry.loot { color: var(--gold); }
+#combat-log-inner .entry.sys  { color: var(--cyan); }
+
+#combat-log-toggle {
+  display: none;
+  position: fixed;
+  bottom: var(--battle-h);
+  left: 0;
+  width: 100%;
+  background: #0e0e1c;
+  border-top: 2px solid #3a3a5a;
+  border-bottom: 1px solid #2a2a44;
+  padding: 5px 12px;
+  font-size: 7px;
+  color: var(--dim);
+  cursor: pointer;
+  z-index: 51;
+  letter-spacing: 2px;
+  user-select: none;
+}
+
+#combat-log-toggle:hover {
+  color: var(--gold);
+}
+
+#combat-log-toggle.active {
+  display: block;
+}
+
+/* 戦闘中ログオーバーレイ */
+#log-box.combat-overlay {
+  position: fixed;
+  bottom: calc(var(--battle-h) + 22px);
+  left: 0;
+  width: 100%;
+  height: 200px;
+  max-height: 40vh;
+  z-index: 50;
+  background: rgba(8, 8, 15, 0.97);
+  border-top: 2px solid #3a3a5a;
+  border-bottom: none;
+  margin: 0;
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+@keyframes critflash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes bossshake {
+  0%   { transform: translate(0,0); }
+  15%  { transform: translate(-6px, 3px); }
+  30%  { transform: translate(6px, -3px); }
+  45%  { transform: translate(-4px, 2px); }
+  60%  { transform: translate(4px, -1px); }
+  80%  { transform: translate(-2px, 1px); }
+  100% { transform: translate(0,0); }
 }

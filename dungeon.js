@@ -6423,3 +6423,53 @@ document.addEventListener('keydown', function (e) {
     if (G.inCombat) toggleCombatLog();
   }
 });
+
+// Combat log controls are intentionally centralized here because the log button
+// was duplicated in older HTML, which made getElementById point at the wrong UI.
+function setCombatLogOpen(open) {
+  combatLogOpen = open;
+  const logBox = document.getElementById('log-box');
+  if (logBox) {
+    logBox.classList.toggle('combat-overlay', open);
+    if (open) logBox.scrollTop = logBox.scrollHeight;
+  }
+  document.querySelectorAll('#combat-log-toggle').forEach(toggle => {
+    toggle.classList.toggle('open', open);
+  });
+  document.querySelectorAll('#combat-log-arrow').forEach(arrow => {
+    arrow.textContent = open ? '▼' : '▲';
+  });
+}
+
+toggleCombatLog = function () {
+  setCombatLogOpen(!combatLogOpen);
+};
+
+(function () {
+  const _startCombatWithLog = startCombat;
+  startCombat = function (...args) {
+    _startCombatWithLog(...args);
+    document.querySelectorAll('#combat-log-toggle').forEach(toggle => {
+      toggle.classList.add('active');
+    });
+    setCombatLogOpen(false);
+  };
+})();
+
+(function () {
+  const _endCombatWithLog = endCombat;
+  endCombat = function (...args) {
+    _endCombatWithLog(...args);
+    setCombatLogOpen(false);
+    document.querySelectorAll('#combat-log-toggle').forEach(toggle => {
+      toggle.classList.remove('active');
+    });
+  };
+})();
+
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Tab') return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if (G.inCombat) toggleCombatLog();
+}, true);
